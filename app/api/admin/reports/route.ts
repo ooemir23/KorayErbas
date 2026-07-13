@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import type { CustomerRevenue, MonthlyRevenue } from "@/lib/types";
 
@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await ensureSchema();
     // Müşteri bazlı ciro (yalnızca onaylı siparişler)
     const customers = await sql<CustomerRevenue>`
       SELECT

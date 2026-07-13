@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 
 // PUT /api/admin/products/:id  → ürün güncelle
@@ -38,6 +38,7 @@ export async function PUT(
   const stock = body.stock ?? null;
 
   try {
+    await ensureSchema();
     const result = await sql`
       UPDATE products SET
         name = COALESCE(${name || null}, name),
@@ -75,6 +76,7 @@ export async function DELETE(
   }
 
   try {
+    await ensureSchema();
     const result = await sql`DELETE FROM products WHERE id = ${id};`;
     if (result.rowCount === 0) {
       return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });

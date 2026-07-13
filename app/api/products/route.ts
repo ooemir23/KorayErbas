@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import type { Product } from "@/lib/types";
 
 // GET /api/products → Storefront için SADECE stok > 0 olan ürünler.
@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const all = searchParams.get("all") === "1";
 
   try {
+    await ensureSchema();
     const result = all
       ? await sql<Product>`SELECT * FROM products ORDER BY id DESC;`
       : await sql<Product>`SELECT * FROM products WHERE stock > 0 ORDER BY id DESC;`;

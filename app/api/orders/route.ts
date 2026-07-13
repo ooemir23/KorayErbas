@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import type { CartItem } from "@/lib/types";
 
 // POST /api/orders  → Storefront'tan yeni sipariş oluşturur.
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
 
   // Toplam tutarı DB'den gelen güncel fiyatla yeniden hesapla (güvenlik).
   const ids = items.map((i) => i.product_id);
+  await ensureSchema();
   const client = await sql.connect();
   let productMap: Map<number, any>;
   try {

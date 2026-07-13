@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 
 // POST /api/admin/products  (yeni ürün)
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
   const stock = Math.max(0, Math.floor(Number(body.stock) || 0));
 
   try {
+    await ensureSchema();
     const result = await sql`
       INSERT INTO products (name, unit, image_url, purchase_price, retail_price, stock)
       VALUES (${name}, ${unit}, ${image_url}, ${purchase_price}, ${retail_price}, ${stock})

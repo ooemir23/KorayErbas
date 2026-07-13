@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import type { Order } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await ensureSchema();
     const result =
       status === "all"
         ? await sql<Order>`SELECT * FROM orders ORDER BY created_at DESC;`

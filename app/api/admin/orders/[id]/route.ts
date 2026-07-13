@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql, ensureSchema } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import type { OrderItem } from "@/lib/types";
 
@@ -34,6 +34,7 @@ export async function PUT(
 
   const client = await sql.connect();
   try {
+    await ensureSchema();
     await client.query("BEGIN");
 
     // Siparişi kilitle (FOR UPDATE) — eşzamanlı onayı engeller.

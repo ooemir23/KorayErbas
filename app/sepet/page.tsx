@@ -5,7 +5,7 @@ import Link from "next/link";
 import { StorefrontHeader } from "@/components/StorefrontHeader";
 import { ToastContainer, type Toast } from "@/components/Toast";
 import { useCart } from "@/lib/useCart";
-import { formatTRY } from "@/lib/format";
+import { formatTRY, formatUnit, productLabel } from "@/lib/format";
 
 let toastSeq = 0;
 
@@ -54,76 +54,80 @@ export default function CartPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Ürün listesi */}
             <div className="space-y-3 lg:col-span-2">
-              {cart.items.map((item) => (
-                <div
-                  key={item.product_id}
-                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3"
-                >
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    {item.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xl text-slate-300">
-                        📦
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-slate-900">
-                      {item.name}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {formatTRY(item.unit_price)} {item.unit && `/ ${item.unit}`}
-                    </p>
-                  </div>
-
-                  {/* Adet kontrol */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        cart.setQuantity(item.product_id, item.quantity - 1)
-                      }
-                      className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                      aria-label="Azalt"
-                    >
-                      −
-                    </button>
-                    <span className="w-8 text-center font-medium">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() =>
-                        cart.setQuantity(item.product_id, item.quantity + 1)
-                      }
-                      className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                      aria-label="Artır"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div className="w-24 text-right font-semibold text-slate-900">
-                    {formatTRY(item.unit_price * item.quantity)}
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      cart.removeItem(item.product_id);
-                      pushToast(`${item.name} sepetten çıkarıldı.`, "info");
-                    }}
-                    className="text-slate-400 hover:text-red-600"
-                    aria-label="Kaldır"
+              {cart.items.map((item) => {
+                const label = productLabel(item) || `#${item.product_id}`;
+                const unit = formatUnit(item.unit_type, item.unit_value);
+                return (
+                  <div
+                    key={item.product_id}
+                    className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3"
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      {item.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.image_url}
+                          alt={label}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xl text-slate-300">
+                          📦
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900">
+                        {label}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {formatTRY(item.unit_price)} {unit && `/ ${unit}`}
+                      </p>
+                    </div>
+
+                    {/* Adet kontrol */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          cart.setQuantity(item.product_id, item.quantity - 1)
+                        }
+                        className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        aria-label="Azalt"
+                      >
+                        −
+                      </button>
+                      <span className="w-8 text-center font-medium">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          cart.setQuantity(item.product_id, item.quantity + 1)
+                        }
+                        className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        aria-label="Artır"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="w-24 text-right font-semibold text-slate-900">
+                      {formatTRY(item.unit_price * item.quantity)}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        cart.removeItem(item.product_id);
+                        pushToast(`${label} sepetten çıkarıldı.`, "info");
+                      }}
+                      className="text-slate-400 hover:text-red-600"
+                      aria-label="Kaldır"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Özet */}

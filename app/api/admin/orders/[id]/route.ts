@@ -78,9 +78,12 @@ export async function PUT(
           [it.quantity, it.product_id]
         );
         if (r.rowCount === 0) {
+          const itemLabel =
+            [it.brand, it.flavor].filter(Boolean).join(" ") ||
+            `#${it.product_id}`;
           throw new HttpError(
             400,
-            `Yetersiz stok: ${it.product_name} (istenilen ${it.quantity}).`
+            `Yetersiz stok: ${itemLabel} (istenilen ${it.quantity}).`
           );
         }
       }

@@ -1,5 +1,5 @@
 import type { CartItem } from "@/lib/types";
-import { formatTRY } from "@/lib/format";
+import { formatTRY, formatUnit, productLabel } from "@/lib/format";
 
 export interface OrderSummary {
   first_name: string;
@@ -21,8 +21,10 @@ export function buildOrderMessage(s: OrderSummary): string {
   lines.push("");
   lines.push("*Ürünler:*");
   s.items.forEach((it, i) => {
+    const label = productLabel(it) || `#${it.product_id}`;
+    const unit = formatUnit(it.unit_type, it.unit_value);
     lines.push(
-      `${i + 1}. ${it.name}${it.unit ? ` (${it.unit})` : ""}`
+      `${i + 1}. ${label}${unit ? ` (${unit})` : ""}`
     );
     lines.push(
       `   ${it.quantity} x ${formatTRY(it.unit_price)} = ${formatTRY(

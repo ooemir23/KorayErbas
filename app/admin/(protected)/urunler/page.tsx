@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import type { Product } from "@/lib/types";
 import { ImageUploader } from "@/components/ImageUploader";
 import { ToastContainer, type Toast } from "@/components/Toast";
-import { formatTRY } from "@/lib/format";
+import { formatTRY, formatUnit, productLabel, UNIT_TYPES } from "@/lib/format";
 
 let toastSeq = 0;
 
 const EMPTY = {
-  name: "",
-  unit: "",
+  brand: "",
+  flavor: "",
+  unit_type: "gram" as string,
+  unit_value: 0,
   image_url: null as string | null,
   purchase_price: 0,
   retail_price: 0,
   stock: 0,
+  critical_threshold: 5,
 };
 
 export default function AdminProductsPage() {
@@ -22,6 +25,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
+  const [query, setQuery] = useState("");
 
   const pushToast = useCallback(
     (message: string, type: Toast["type"] = "success") => {
@@ -38,7 +42,7 @@ export default function AdminProductsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/products?all=1");
+      const res = await fetch("/api/products?all=1", { cache: "no-store" });
       const data = await res.json();
       setProducts(data.products || []);
     } catch {
@@ -66,9 +70,23 @@ export default function AdminProductsPage() {
     }
   }
 
+  // Tüm alanlarda arama (marka, aroma, birim tipi).
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => {
+      return (
+        p.brand?.toLowerCase().includes(q) ||
+        p.flavor?.toLowerCase().includes(q) ||
+        p.unit_type?.toLowerCase().includes(q) ||
+        String(p.unit_value).includes(q)
+      );
+    });
+  }, [products, query]);
+
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Ürünler</h2>
           <p className="text-sm text-slate-500">Katalog ve stok yönetimi.</p>
@@ -81,74 +99,94 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
+      {/* Arama */}
+      <div className="mb-4">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔍 Marka, aroma veya birim ara…"
+          className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl bg-slate-200" />
           ))}
         </div>
-      ) : products.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
           <p className="text-4xl">🏷️</p>
-          <p className="mt-2 font-medium text-slate-700">Henüz ürün yok.</p>
+          <p className="mt-2 font-medium text-slate-700">
+            {query ? "Aramanızla eşleşen ürün yok." : "Henüz ürün yok."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3"
-            >
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                {p.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.image_url}
-                    alt={p.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xl text-slate-300">
-                    📦
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-900">{p.name}</p>
-                {p.unit && <p className="text-xs text-slate-400">{p.unit}</p>}
-                <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">
-                  <span>Satış: {formatTRY(p.retail_price)}</span>
-                  <span>Maliyet: {formatTRY(p.purchase_price)}</span>
+          {filtered.map((p) => {
+            const label = productLabel(p) || `#${p.id}`;
+            const unit = formatUnit(p.unit_type, p.unit_value);
+            const isCritical = p.stock > 0 && p.stock <= p.critical_threshold;
+            return (
+              <div
+                key={p.id}
+                className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3"
+              >
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                  {p.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.image_url}
+                      alt={label}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xl text-slate-300">
+                      📦
+                    </div>
+                  )}
                 </div>
-                <p className="mt-0.5 text-xs">
-                  Stok:{" "}
-                  <span
-                    className={
-                      p.stock <= 0
-                        ? "font-semibold text-red-600"
-                        : "text-slate-700"
-                    }
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-slate-900">{label}</p>
+                  {unit && <p className="text-xs text-slate-400">{unit}</p>}
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">
+                    <span>Satış: {formatTRY(p.retail_price)}</span>
+                    <span>Maliyet: {formatTRY(p.purchase_price)}</span>
+                  </div>
+                  <p className="mt-0.5 text-xs">
+                    Stok:{" "}
+                    <span
+                      className={
+                        p.stock <= 0
+                          ? "font-semibold text-red-600"
+                          : isCritical
+                          ? "font-semibold text-amber-600"
+                          : "text-slate-700"
+                      }
+                    >
+                      {p.stock}
+                      {isCritical && " ⚠"}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => setEditing(p)}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    {p.stock}
-                  </span>
-                </p>
+                    Düzenle
+                  </button>
+                  <button
+                    onClick={() => remove(p.id)}
+                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Sil
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => setEditing(p)}
-                  className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Düzenle
-                </button>
-                <button
-                  onClick={() => remove(p.id)}
-                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -182,18 +220,25 @@ function ProductFormModal({
   pushToast: (m: string, t?: Toast["type"]) => void;
 }) {
   const [form, setForm] = useState({
-    name: product?.name ?? EMPTY.name,
-    unit: product?.unit ?? EMPTY.unit,
+    brand: product?.brand ?? EMPTY.brand,
+    flavor: product?.flavor ?? EMPTY.flavor,
+    unit_type: (product?.unit_type as string) ?? EMPTY.unit_type,
+    unit_value: Number(product?.unit_value ?? EMPTY.unit_value),
     image_url: (product?.image_url ?? null) as string | null,
-    purchase_price: product?.purchase_price ?? EMPTY.purchase_price,
-    retail_price: product?.retail_price ?? EMPTY.retail_price,
+    purchase_price: Number(product?.purchase_price ?? EMPTY.purchase_price),
+    retail_price: Number(product?.retail_price ?? EMPTY.retail_price),
     stock: product?.stock ?? EMPTY.stock,
+    critical_threshold: product?.critical_threshold ?? EMPTY.critical_threshold,
   });
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    if (!form.name.trim()) {
-      pushToast("Ürün adı zorunludur.", "error");
+    if (!form.brand.trim()) {
+      pushToast("Marka zorunludur.", "error");
+      return;
+    }
+    if (!UNIT_TYPES.includes(form.unit_type as any)) {
+      pushToast("Geçerli bir birim tipi seçin.", "error");
       return;
     }
     setSaving(true);
@@ -217,6 +262,9 @@ function ProductFormModal({
       setSaving(false);
     }
   }
+
+  const inputCls =
+    "mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -245,29 +293,72 @@ function ProductFormModal({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Ürün Adı *
-            </label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-            />
-          </div>
-
+          {/* Marka + Aroma */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-slate-700">
-                Gramaj/Hacim
+                Marka *
               </label>
               <input
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                placeholder="500g, 1L, adet…"
-                className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                value={form.brand}
+                onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                placeholder="Çaykur, Nescafé…"
+                className={inputCls}
               />
             </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Aroma / Ürün Adı
+              </label>
+              <input
+                value={form.flavor}
+                onChange={(e) => setForm({ ...form, flavor: e.target.value })}
+                placeholder="Rize, Gold…"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Birim tipi + Miktar */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Birim Tipi *
+              </label>
+              <select
+                value={form.unit_type}
+                onChange={(e) =>
+                  setForm({ ...form, unit_type: e.target.value })
+                }
+                className={inputCls}
+              >
+                {UNIT_TYPES.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Miktar
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.unit_value}
+                onChange={(e) =>
+                  setForm({ ...form, unit_value: Number(e.target.value) })
+                }
+                placeholder="örn. 500 → 500 gram"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Stok + Kritik eşik */}
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-slate-700">Stok</label>
               <input
@@ -277,11 +368,32 @@ function ProductFormModal({
                 onChange={(e) =>
                   setForm({ ...form, stock: Number(e.target.value) })
                 }
-                className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className={inputCls}
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Kritik Stok Eşiği
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={form.critical_threshold}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    critical_threshold: Number(e.target.value),
+                  })
+                }
+                className={inputCls}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Stok bu değerin altına düşerse uyarı verilir.
+              </p>
             </div>
           </div>
 
+          {/* Fiyatlar */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-slate-700">
@@ -295,7 +407,7 @@ function ProductFormModal({
                 onChange={(e) =>
                   setForm({ ...form, purchase_price: Number(e.target.value) })
                 }
-                className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className={inputCls}
               />
             </div>
             <div>
@@ -310,7 +422,7 @@ function ProductFormModal({
                 onChange={(e) =>
                   setForm({ ...form, retail_price: Number(e.target.value) })
                 }
-                className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className={inputCls}
               />
             </div>
           </div>

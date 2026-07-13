@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   let productMap: Map<number, any>;
   try {
     const productRows = await client.query(
-      `SELECT id, name, unit, retail_price, stock
+      `SELECT id, brand, flavor, unit_type, unit_value, retail_price, stock
        FROM products WHERE id = ANY($1::int[]);`,
       [ids]
     );
@@ -62,8 +62,10 @@ export async function POST(request: Request) {
     total += unit_price * ci.quantity;
     return {
       product_id: p.id,
-      product_name: p.name,
-      unit: p.unit,
+      brand: p.brand,
+      flavor: p.flavor,
+      unit_type: p.unit_type,
+      unit_value: Number(p.unit_value),
       quantity: ci.quantity,
       unit_price,
     };

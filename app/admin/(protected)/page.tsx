@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
 import { ToastContainer, type Toast } from "@/components/Toast";
-import { formatTRY, formatDate } from "@/lib/format";
+import { formatTRY, formatDate, formatUnit, productLabel } from "@/lib/format";
 
 let toastSeq = 0;
 
@@ -274,10 +274,15 @@ function OrderDetailModal({
                   className="grid grid-cols-12 items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm"
                 >
                   <div className="col-span-5">
-                    <p className="font-medium text-slate-900">{it.product_name}</p>
-                    {it.unit && (
-                      <p className="text-xs text-slate-400">{it.unit}</p>
-                    )}
+                    <p className="font-medium text-slate-900">
+                      {productLabel(it) || `#${it.product_id}`}
+                    </p>
+                    {(() => {
+                      const u = formatUnit(it.unit_type, it.unit_value);
+                      return u ? (
+                        <p className="text-xs text-slate-400">{u}</p>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="col-span-3">
                     <label className="block text-xs text-slate-400">Adet</label>

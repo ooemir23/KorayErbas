@@ -30,3 +30,6 @@ next-env.d.ts
 # editor
 .vscode/
 .idea/
+
+# ZCode geçici dosyaları
+.zcode/

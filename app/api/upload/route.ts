@@ -44,8 +44,16 @@ export async function POST(request: Request) {
       }
     );
     return NextResponse.json({ url: blob.url });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[upload] blob hatası:", err);
-    return NextResponse.json({ error: "Görsel yüklenemedi." }, { status: 500 });
+    // Gerçek hatayı client'a ilet ki teşhis edilebilsin
+    // (token eksik/scope yanlış/read-only/store bağlı değil vb.)
+    const msg =
+      err?.message ||
+      (typeof err === "string" ? err : "Görsel yüklenemedi.");
+    return NextResponse.json(
+      { error: `Görsel yüklenemedi: ${msg}` },
+      { status: 500 }
+    );
   }
 }

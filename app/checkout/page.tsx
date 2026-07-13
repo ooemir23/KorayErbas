@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { StorefrontHeader } from "@/components/StorefrontHeader";
 import { ToastContainer, type Toast } from "@/components/Toast";
 import { useCart } from "@/lib/useCart";
-import { formatTRY, buildWhatsAppLink } from "@/lib/format";
+import { formatTRY, buildWhatsAppLink, productLabel } from "@/lib/format";
 import { buildOrderMessage } from "@/lib/whatsapp";
 
 let toastSeq = 0;
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
                       className="flex justify-between text-slate-600"
                     >
                       <span className="pr-2">
-                        {it.name}{" "}
+                        {productLabel(it) || `#${it.product_id}`}{" "}
                         <span className="text-slate-400">×{it.quantity}</span>
                       </span>
                       <span className="shrink-0 font-medium">

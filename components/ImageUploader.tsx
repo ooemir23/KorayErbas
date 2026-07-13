@@ -43,7 +43,12 @@ export function ImageUploader({ initialUrl, onUploaded }: ImageUploaderProps) {
       const fd = new FormData();
       fd.append("file", compressed);
 
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+        cache: "no-store",
+        credentials: "same-origin",
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Yükleme başarısız.");

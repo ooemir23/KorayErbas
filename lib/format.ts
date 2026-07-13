@@ -39,3 +39,39 @@ export function buildWhatsAppLink(phone: string, text: string): string {
   const clean = toWaPhone(phone);
   return `https://wa.me/${clean}?text=${encodeURIComponent(text)}`;
 }
+
+// Birim tipi etiketleri (UI select ve gösterimde kullanılır).
+export const UNIT_TYPES = ["gram", "kilo", "paket", "kutu"] as const;
+export type UnitType = (typeof UNIT_TYPES)[number];
+
+// Birim tipi → tekil etiket.
+const UNIT_LABELS_SINGULAR: Record<UnitType, string> = {
+  gram: "gram",
+  kilo: "kilo",
+  paket: "paket",
+  kutu: "kutu",
+};
+
+// Birim tipi + miktar → "500 gram", "2 kilo", "1 paket".
+// Miktar 1 ise ve birim sayılabilen birimse yine de sayıyı gösteririz
+// ("1 paket"), ama 0 veya boşsa sadece birim adı döner.
+export function formatUnit(
+  unitType?: string | null,
+  unitValue?: number | null
+): string {
+  const t = (unitType as UnitType) || "";
+  const label = UNIT_LABELS_SINGULAR[t] || t || "";
+  if (!label) return "";
+  const v = Number(unitValue);
+  if (!Number.isFinite(v) || v <= 0) return label;
+  return `${v} ${label}`;
+}
+
+// Marka + aroma → "Çaykur Rize" (tek satırda ürün etiketi).
+export function productLabel(p: {
+  brand?: string | null;
+  flavor?: string | null;
+}): string {
+  const parts = [p.brand?.trim(), p.flavor?.trim()].filter(Boolean);
+  return parts.join(" ");
+}

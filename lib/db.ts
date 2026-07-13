@@ -46,6 +46,13 @@ export async function ensureSchema(): Promise<void> {
         await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS unit_value NUMERIC(12, 2) NOT NULL DEFAULT 0;`;
         await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS critical_threshold INTEGER NOT NULL DEFAULT 0;`;
 
+        // 2b) Eski 'name' ve 'unit' kolonları artık kullanılmıyor. Yeni INSERT'ler
+        //     bu kolonlara değer göndermediği için NOT NULL kısıtlamaları hata
+        //     fırlatır. Bu kolonları nullable yap (veriyi silme — geriye dönük
+        //     uyumluluk için bırakıyoruz).
+        await sql`ALTER TABLE products ALTER COLUMN name DROP NOT NULL;`;
+        await sql`ALTER TABLE products ALTER COLUMN unit DROP NOT NULL;`;
+
         // 3) Eski 'name' verisini yeni kolonlara taşı (bir kerelik, marka boşsa).
         await sql`
           UPDATE products

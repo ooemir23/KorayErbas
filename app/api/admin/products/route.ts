@@ -84,8 +84,14 @@ export async function POST(request: Request) {
       RETURNING *;
     `;
     return NextResponse.json({ product: result.rows[0] }, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[products POST]", err);
-    return NextResponse.json({ error: "Ürün eklenemedi." }, { status: 500 });
+    // Gerçek hatayı client'a ilet (DB hatası, UNIQUE ihlali, eksik kolon vb.)
+    const msg =
+      err?.message || (typeof err === "string" ? err : "Ürün eklenemedi.");
+    return NextResponse.json(
+      { error: `Ürün eklenemedi: ${msg}` },
+      { status: 500 }
+    );
   }
 }

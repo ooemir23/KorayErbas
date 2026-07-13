@@ -14,6 +14,8 @@ export default function StorefrontPage() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [query, setQuery] = useState("");
+  // Açık olan marka setleri (akordeon). İlk açılışta tümü açık.
+  const [openBrands, setOpenBrands] = useState<Set<string> | null>(null);
 
   const cart = useCart();
 
@@ -65,6 +67,25 @@ export default function StorefrontPage() {
 
   const brands = grouped.map(([brand]) => brand);
 
+  // Açık marka seti. null = ilk açılışta tümü açık.
+  const open: Set<string> =
+    openBrands ?? new Set(grouped.map(([b]) => b));
+  function toggleBrand(brand: string) {
+    setOpenBrands((prev) => {
+      const base = prev ?? new Set(grouped.map(([b]) => b));
+      const next = new Set(base);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
+      return next;
+    });
+  }
+  function setOpen(updater: (prev: Set<string>) => Set<string>) {
+    setOpenBrands((prev) => {
+      const base = prev ?? new Set(grouped.map(([b]) => b));
+      return updater(base);
+    });
+  }
+
   return (
     <div className="min-h-screen">
       <StorefrontHeader cartCount={cart.count} />
@@ -88,17 +109,29 @@ export default function StorefrontPage() {
           />
         </div>
 
-        {/* Marka hızlı geçiş sekmeleri */}
+        {/* Marka hızlı geçiş sekmeleri (tıklayınca o markaya in + açar) */}
         {brands.length > 1 && (
           <div className="mb-6 flex flex-wrap gap-2">
             {brands.map((brand) => (
-              <a
+              <button
                 key={brand}
-                href={`#brand-${encodeURIComponent(brand)}`}
+                onClick={() => {
+                  setOpen((prev) => {
+                    const next = new Set(prev);
+                    next.add(brand);
+                    return next;
+                  });
+                  // Marka başlığına kaydır
+                  setTimeout(() => {
+                    document
+                      .getElementById(`brand-${encodeURIComponent(brand)}`)
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 50);
+                }}
                 className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
               >
                 {brand}
-              </a>
+              </button>
             ))}
           </div>
         )}
@@ -123,32 +156,60 @@ export default function StorefrontPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-10">
-            {grouped.map(([brand, items]) => (
-              <section key={brand} id={`brand-${encodeURIComponent(brand)}`}>
-                <h2 className="mb-3 text-lg font-bold text-slate-900">
-                  {brand}
-                  <span className="ml-2 text-sm font-normal text-slate-400">
-                    {items.length} ürün
-                  </span>
-                </h2>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  {items.map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      onAdd={(prod) => {
-                        cart.addItem(prod);
-                        pushToast(
-                          `${prod.brand} ${prod.flavor}`.trim() +
-                            " sepete eklendi."
-                        );
-                      }}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className="space-y-3">
+            {grouped.map(([brand, items]) => {
+              const isOpen = open.has(brand);
+              return (
+                <section
+                  key={brand}
+                  id={`brand-${encodeURIComponent(brand)}`}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                >
+                  {/* Tıklanabilir marka başlığı (akordeon tetikleyici) */}
+                  <button
+                    onClick={() => toggleBrand(brand)}
+                    className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-slate-50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold text-slate-900">
+                        {brand}
+                      </h2>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                        {items.length} ürün
+                      </span>
+                    </div>
+                    <span
+                      className={
+                        "text-slate-400 transition-transform duration-200 " +
+                        (isOpen ? "rotate-180" : "")
+                      }
+                    >
+                      ▼
+                    </span>
+                  </button>
+                  {/* Ürünler — açıksa göster */}
+                  {isOpen && (
+                    <div className="border-t border-slate-100 p-4">
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        {items.map((p) => (
+                          <ProductCard
+                            key={p.id}
+                            product={p}
+                            onAdd={(prod) => {
+                              cart.addItem(prod);
+                              pushToast(
+                                `${prod.brand} ${prod.flavor}`.trim() +
+                                  " sepete eklendi."
+                              );
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </main>

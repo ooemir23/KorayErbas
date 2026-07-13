@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import type { Product } from "@/lib/types";
 import { ImageUploader } from "@/components/ImageUploader";
 import { ToastContainer, type Toast } from "@/components/Toast";
-import { formatTRY, formatUnit, productLabel, UNIT_TYPES } from "@/lib/format";
+import { formatTRY, formatUnit, UNIT_TYPES } from "@/lib/format";
 
 let toastSeq = 0;
 
@@ -125,7 +125,6 @@ export default function AdminProductsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p) => {
-            const label = productLabel(p) || `#${p.id}`;
             const unit = formatUnit(p.unit_type, p.unit_value);
             const isCritical = p.stock > 0 && p.stock <= p.critical_threshold;
             return (
@@ -138,7 +137,7 @@ export default function AdminProductsPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.image_url}
-                      alt={label}
+                      alt={`${p.brand} ${p.flavor}`.trim()}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -148,7 +147,13 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-900">{label}</p>
+                  {/* Marka üstte, aroma altta */}
+                  <p className="truncate font-medium text-slate-900">
+                    {p.brand || "—"}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {p.flavor || "—"}
+                  </p>
                   {unit && <p className="text-xs text-slate-400">{unit}</p>}
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">
                     <span>Satış: {formatTRY(p.retail_price)}</span>

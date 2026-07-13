@@ -90,28 +90,28 @@ export default function StorefrontPage() {
     <div className="min-h-screen">
       <StorefrontHeader cartCount={cart.count} />
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-3 py-4">
         {/* Başlık */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-slate-900">Ürünler</h1>
-          <p className="mt-1 text-sm text-slate-500">
+        <div className="mb-3">
+          <h1 className="text-xl font-bold text-slate-900">Ürünler</h1>
+          <p className="mt-0.5 text-xs text-slate-500">
             Sadece stokta bulunan ürünler gösterilir.
           </p>
         </div>
 
         {/* Arama kutusu */}
-        <div className="mb-6">
+        <div className="mb-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="🔍 Marka, aroma veya birim ara…"
-            className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </div>
 
         {/* Marka hızlı geçiş sekmeleri (tıklayınca o markaya in + açar) */}
         {brands.length > 1 && (
-          <div className="mb-6 flex flex-wrap gap-2">
+          <div className="mb-3 flex flex-wrap gap-1.5">
             {brands.map((brand) => (
               <button
                 key={brand}
@@ -128,7 +128,7 @@ export default function StorefrontPage() {
                       ?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }, 50);
                 }}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
               >
                 {brand}
               </button>
@@ -138,11 +138,11 @@ export default function StorefrontPage() {
 
         {/* İçerik */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+            {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}
-                className="h-64 animate-pulse rounded-2xl bg-slate-200"
+                className="h-44 animate-pulse rounded-lg bg-slate-200"
               />
             ))}
           </div>
@@ -156,31 +156,31 @@ export default function StorefrontPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {grouped.map(([brand, items]) => {
               const isOpen = open.has(brand);
               return (
                 <section
                   key={brand}
                   id={`brand-${encodeURIComponent(brand)}`}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                  className="overflow-hidden rounded-lg border border-slate-200 bg-white"
                 >
                   {/* Tıklanabilir marka başlığı (akordeon tetikleyici) */}
                   <button
                     onClick={() => toggleBrand(brand)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-slate-50"
+                    className="flex w-full items-center justify-between px-3 py-2 text-left transition hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-slate-900">
+                      <h2 className="text-sm font-bold text-slate-900">
                         {brand}
                       </h2>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                        {items.length} ürün
+                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                        {items.length}
                       </span>
                     </div>
                     <span
                       className={
-                        "text-slate-400 transition-transform duration-200 " +
+                        "text-xs text-slate-400 transition-transform duration-200 " +
                         (isOpen ? "rotate-180" : "")
                       }
                     >
@@ -189,8 +189,8 @@ export default function StorefrontPage() {
                   </button>
                   {/* Ürünler — açıksa göster */}
                   {isOpen && (
-                    <div className="border-t border-slate-100 p-4">
-                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="border-t border-slate-100 p-2">
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                         {items.map((p) => (
                           <ProductCard
                             key={p.id}

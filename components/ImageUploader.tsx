@@ -26,20 +26,17 @@ export function ImageUploader({ initialUrl, onUploaded }: ImageUploaderProps) {
   async function handleFile(file: File) {
     setError(null);
     try {
-      // 1) Sıkıştır (frontend)
+      // 1) Sıkıştır (frontend) — 600x600, <60KB, WebP
       setStatus("compressing");
       setProgress("Görsel sıkıştırılıyor…");
-      const compressed = await compressImage(file, {
-        maxWidthOrHeight: 800,
-        maxSizeMB: 0.1, // 100 KB
-      });
+      const compressed = await compressImage(file);
 
       // Önizleme
       setPreview(URL.createObjectURL(compressed));
 
       // 2) Sunucuya yükle (Blob token server'da)
       setStatus("uploading");
-      setProgress("Vercel Blob'a yükleniyor…");
+      setProgress("Görsel yükleniyor…");
       const fd = new FormData();
       fd.append("file", compressed);
 

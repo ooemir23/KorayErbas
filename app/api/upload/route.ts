@@ -25,10 +25,10 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  // 8 MB üstü (sıkıştırma atlandıysa) koruması
-  if (file.size > 8 * 1024 * 1024) {
+  // Sıkıştırma atlandıysa bile aşırı büyük dosyaları engelle (maks. 5 MB)
+  if (file.size > 5 * 1024 * 1024) {
     return NextResponse.json(
-      { error: "Görsel çok büyük (maks. 8 MB)." },
+      { error: "Görsel çok büyük (maks. 5 MB)." },
       { status: 400 }
     );
   }

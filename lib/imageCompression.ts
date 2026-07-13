@@ -11,8 +11,8 @@ export interface CompressOptions {
 
 /**
  * Verilen File'ı sıkıştırır ve optimize edilmiş bir File döndürür.
- * - Maks. 800x800
- * - Hedef < 100 KB (0.1 MB)
+ * - Maks. 600x600 (mağaza kartları için yeterli, daha küçük dosya)
+ * - Hedef < 60 KB (0.06 MB)
  * - WebP (destekleniyorsa), değilse JPEG
  */
 export async function compressImage(
@@ -20,8 +20,8 @@ export async function compressImage(
   opts: CompressOptions = {}
 ): Promise<File> {
   const {
-    maxSizeMB = 0.1, // 100 KB
-    maxWidthOrHeight = 800,
+    maxSizeMB = 0.06, // 60 KB
+    maxWidthOrHeight = 600,
   } = opts;
 
   const useWebP = supportsWebP();
@@ -31,7 +31,7 @@ export async function compressImage(
     maxWidthOrHeight,
     useWebWorker: true,
     fileType: useWebP ? "image/webp" : "image/jpeg",
-    initialQuality: 0.8,
+    initialQuality: 0.7,
     alwaysKeepResolution: false,
   };
 

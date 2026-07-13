@@ -6,6 +6,8 @@ import type { Product } from "@/lib/types";
 //   ?all=1 verilirse (admin) tüm ürünleri döner.
 //   ?q=... verilirse marka/aroma/birim'de arama yapar.
 //   ?brand=... verilirse sadece belirli markayı döner.
+//   ?brands=1 verilirse ürünleri değil, DISTINCT marka listesi döner
+//      (admin formundaki datalist/otomatik tamamlama için).
 //
 // Arama büyük-küçük harf duyarsızdır, ILIKE ile yapılır.
 export async function GET(request: Request) {
@@ -13,9 +15,22 @@ export async function GET(request: Request) {
   const all = searchParams.get("all") === "1";
   const q = searchParams.get("q")?.trim() || "";
   const brand = searchParams.get("brand")?.trim() || "";
+  const onlyBrands = searchParams.get("brands") === "1";
 
   try {
     await ensureSchema();
+
+    // Sadece benzersiz marka listesi (admin formu için).
+    // Stok 0 olan ürünlerin markaları da dahil edilir (admin ?all=1 gibi).
+    if (onlyBrands) {
+      const res = await sql<{ brand: string }>`
+        SELECT DISTINCT brand FROM products
+        WHERE brand <> ''
+        ORDER BY brand ASC;
+      `;
+      const brands = res.rows.map((r) => r.brand);
+      return NextResponse.json({ brands });
+    }
 
     // Arama/filtre yoksa basit sorgu.
     if (!q && !brand) {

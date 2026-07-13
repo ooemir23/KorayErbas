@@ -231,6 +231,23 @@ function ProductFormModal({
     critical_threshold: product?.critical_threshold ?? EMPTY.critical_threshold,
   });
   const [saving, setSaving] = useState(false);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brandQuery, setBrandQuery] = useState("");
+
+  // Mevcut markaları yükle (datalist için).
+  useEffect(() => {
+    fetch("/api/products?brands=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBrands(Array.isArray(d.brands) ? d.brands : []))
+      .catch(() => {});
+  }, []);
+
+  // Marka alanı için filtrelenmiş öneriler (yazdıkça daralır).
+  const brandSuggestions = useMemo(() => {
+    const q = brandQuery.trim().toLowerCase();
+    if (!q) return brands;
+    return brands.filter((b) => b.toLowerCase().includes(q));
+  }, [brands, brandQuery]);
 
   async function save() {
     if (!form.brand.trim()) {
@@ -300,11 +317,26 @@ function ProductFormModal({
                 Marka *
               </label>
               <input
+                list="brand-options"
                 value={form.brand}
-                onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                placeholder="Çaykur, Nescafé…"
+                onChange={(e) => {
+                  setForm({ ...form, brand: e.target.value });
+                  setBrandQuery(e.target.value);
+                }}
+                placeholder="Çaykur, Nescafé… (yazınca önerir)"
+                autoComplete="off"
                 className={inputCls}
               />
+              <datalist id="brand-options">
+                {brandSuggestions.map((b) => (
+                  <option key={b} value={b} />
+                ))}
+              </datalist>
+              {brands.length > 0 && (
+                <p className="mt-1 text-xs text-slate-400">
+                  {brands.length} kayıtlı marka mevcut
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">

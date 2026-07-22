@@ -148,10 +148,12 @@ export async function GET(request: Request) {
       customers: customers.rows,
       period,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[admin reports GET]", err);
+    const msg =
+      err?.message || (typeof err === "string" ? err : "Rapor getirilemedi.");
     return NextResponse.json(
-      { error: "Rapor getirilemedi." },
+      { error: `Rapor getirilemedi: ${msg}` },
       { status: 500 }
     );
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const NAV = [
   { href: "/admin", label: "Siparişler", icon: "📦" },
@@ -17,6 +17,36 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Bekleyen sipariş/talep sayıları (sidebar badge'leri için).
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCounts() {
+      try {
+        const [ordersRes, reqRes] = await Promise.all([
+          fetch("/api/admin/orders?status=pending", { cache: "no-store" }),
+          fetch("/api/admin/requests?status=pending", { cache: "no-store" }),
+        ]);
+        if (cancelled) return;
+        if (ordersRes.ok) {
+          const d = await ordersRes.json();
+          setPendingOrders(Array.isArray(d.orders) ? d.orders.length : 0);
+        }
+        if (reqRes.ok) {
+          const d = await reqRes.json();
+          setPendingRequests(Array.isArray(d.requests) ? d.requests.length : 0);
+        }
+      } catch {
+        /* yoksay */
+      }
+    }
+    loadCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -70,6 +100,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 item.href === "/admin"
                   ? pathname === "/admin"
                   : pathname.startsWith(item.href);
+              // Bekleyen öğe sayısı (badge için).
+              const badge =
+                item.href === "/admin"
+                  ? pendingOrders
+                  : item.href === "/admin/talepler"
+                  ? pendingRequests
+                  : 0;
               return (
                 <Link
                   key={item.href}
@@ -82,7 +119,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   <span>{item.icon}</span>
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {badge > 0 && (
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
+                      {badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}

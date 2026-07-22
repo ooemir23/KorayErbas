@@ -40,25 +40,30 @@ export async function GET(request: Request) {
 
     // ── 1) Özet (özet kartları için) ────────────────────────────────
     // orders.items JSONB'sini açıp her item için ciro/maliyet/kâr hesapla.
+    // Not: jsonb_array_elements setof jsonb döndürür; alias ile jsonb olarak
+    // erişiriz (elem->>'key'). Boş items array'leri filtrelenir.
     const summaryRows = await sql`
-      SELECT
-        COALESCE(SUM(item_qty * item_sell), 0)::float8 AS revenue,
-        COALESCE(SUM(item_qty * item_cost), 0)::float8 AS cost,
-        COALESCE(SUM(item_qty * (item_sell - item_cost)), 0)::float8 AS profit,
-        COUNT(DISTINCT o.id)::int AS order_count
-      FROM orders o,
-      LATERAL (
+      WITH item_lines AS (
         SELECT
-          (i->>'quantity')::numeric AS item_qty,
-          COALESCE((i->>'unit_price')::numeric, 0) AS item_sell,
+          o.id AS order_id,
+          (elem->>'quantity')::numeric AS qty,
+          COALESCE((elem->>'unit_price')::numeric, 0) AS sell,
           COALESCE(
-            NULLIF(i->>'purchase_price','')::numeric,
-            (SELECT purchase_price FROM products WHERE id = (i->>'product_id')::int),
+            NULLIF(elem->>'purchase_price','')::numeric,
+            p.purchase_price,
             0
-          ) AS item_cost
-        FROM jsonb_array_elements(o.items) AS i
-      ) items
-      WHERE o.status = 'confirmed';
+          ) AS cost
+        FROM orders o
+        LEFT JOIN LATERAL jsonb_array_elements(o.items) AS elem ON true
+        LEFT JOIN products p ON p.id = (elem->>'product_id')::int
+        WHERE o.status = 'confirmed'
+      )
+      SELECT
+        COALESCE(SUM(qty * sell), 0)::float8 AS revenue,
+        COALESCE(SUM(qty * cost), 0)::float8 AS cost,
+        COALESCE(SUM(qty * (sell - cost)), 0)::float8 AS profit,
+        COUNT(DISTINCT order_id)::int AS order_count
+      FROM item_lines;
     `;
 
     const sRow = summaryRows.rows[0] || {};
@@ -81,27 +86,29 @@ export async function GET(request: Request) {
     // ── 2) En çok satılan ürünler (top 10) ──────────────────────────
     const topProducts = await sql<ProductSales>`
       SELECT
-        NULLIF(i->>'product_id','')::int AS product_id,
-        COALESCE(i->>'brand','') AS brand,
-        COALESCE(i->>'flavor','') AS flavor,
-        SUM((i->>'quantity')::numeric)::float8 AS quantity,
-        SUM((i->>'quantity')::numeric * COALESCE((i->>'unit_price')::numeric,0))::float8 AS revenue,
-        SUM((i->>'quantity')::numeric * COALESCE(
-          NULLIF(i->>'purchase_price','')::numeric,
-          (SELECT purchase_price FROM products WHERE id = (i->>'product_id')::int),
+        NULLIF(elem->>'product_id','')::int AS product_id,
+        COALESCE(elem->>'brand','') AS brand,
+        COALESCE(elem->>'flavor','') AS flavor,
+        SUM((elem->>'quantity')::numeric)::float8 AS quantity,
+        SUM((elem->>'quantity')::numeric * COALESCE((elem->>'unit_price')::numeric,0))::float8 AS revenue,
+        SUM((elem->>'quantity')::numeric * COALESCE(
+          NULLIF(elem->>'purchase_price','')::numeric,
+          p.purchase_price,
           0
         ))::float8 AS cost,
-        SUM((i->>'quantity')::numeric *
-          (COALESCE((i->>'unit_price')::numeric,0) -
+        SUM((elem->>'quantity')::numeric *
+          (COALESCE((elem->>'unit_price')::numeric,0) -
            COALESCE(
-             NULLIF(i->>'purchase_price','')::numeric,
-             (SELECT purchase_price FROM products WHERE id = (i->>'product_id')::int),
+             NULLIF(elem->>'purchase_price','')::numeric,
+             p.purchase_price,
              0
            ))
         )::float8 AS profit
-      FROM orders o, jsonb_array_elements(o.items) AS i
+      FROM orders o
+      CROSS JOIN LATERAL jsonb_array_elements(o.items) AS elem
+      LEFT JOIN products p ON p.id = (elem->>'product_id')::int
       WHERE o.status = 'confirmed'
-      GROUP BY COALESCE(i->>'product_id',''), COALESCE(i->>'brand',''), COALESCE(i->>'flavor','')
+      GROUP BY p.id, COALESCE(elem->>'product_id',''), COALESCE(elem->>'brand',''), COALESCE(elem->>'flavor','')
       ORDER BY quantity DESC
       LIMIT 10;
     `;

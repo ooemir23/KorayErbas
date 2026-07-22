@@ -64,3 +64,22 @@ CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_requests_created_at ON requests(created_at);
 
 COMMENT ON TABLE requests IS 'Stokta olmayan ürünler için müşteri talepleri';
+
+CREATE TABLE IF NOT EXISTS carts (
+  id SERIAL PRIMARY KEY,
+  cart_uid TEXT NOT NULL,                            -- anonim cookie UUID
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,          -- CartItem[]
+  customer_name TEXT,
+  customer_phone TEXT,
+  total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active'              -- active | converted | abandoned
+            CHECK (status IN ('active','converted','abandoned')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_carts_status ON carts(status);
+CREATE INDEX IF NOT EXISTS idx_carts_cart_uid ON carts(cart_uid);
+CREATE INDEX IF NOT EXISTS idx_carts_updated_at ON carts(updated_at);
+
+COMMENT ON TABLE carts IS 'Checkout'\''a ulaşan sepetler (terk edilenler dahil)';

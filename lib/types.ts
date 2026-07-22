@@ -40,6 +40,21 @@ export interface ProductRequest {
   created_at: string;
 }
 
+// Sepet takibi (terk edilen sepetler için).
+export type CartStatus = "active" | "converted" | "abandoned";
+
+export interface Cart {
+  id: number;
+  cart_uid: string;
+  items: CartItem[];
+  customer_name: string | null;
+  customer_phone: string | null;
+  total_amount: number;
+  status: CartStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface OrderItem {
   product_id: number;
   brand: string;

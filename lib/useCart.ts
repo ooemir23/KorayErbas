@@ -3,7 +3,36 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CartItem, Product } from "@/lib/types";
 
-const STORAGE_KEY = "ssy_cart_v3";
+// localStorage şeması: { items, updatedAt }. updatedAt ile 10 saatlik
+// otomatik temizlik uygulanır (sipariş tamamlanmazsa sepet sıfırlanır).
+const STORAGE_KEY = "ssy_cart_v4";
+// Sepet yaşam süresi: 10 saat (milisaniye).
+const CART_TTL_MS = 10 * 60 * 60 * 1000;
+
+interface StoredCart {
+  items: CartItem[];
+  updatedAt: number;
+}
+
+function readStored(): StoredCart | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredCart>;
+    if (!Array.isArray(parsed.items)) return null;
+    return {
+      items: parsed.items,
+      updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(items: CartItem[]) {
+  const payload: StoredCart = { items, updatedAt: Date.now() };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
 
 // Boş sepetle başla; hydrasyon sırasında localStorage'tan yükle.
 export function useCart() {
@@ -11,18 +40,21 @@ export function useCart() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setItems(JSON.parse(raw));
-    } catch {
-      /* yoksay */
+    const stored = readStored();
+    if (stored) {
+      // 10 saatten eskiyse sepeti temizle (otomatik sıfırlama).
+      if (Date.now() - stored.updatedAt > CART_TTL_MS) {
+        localStorage.removeItem(STORAGE_KEY);
+      } else {
+        setItems(stored.items);
+      }
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    writeStored(items);
   }, [items, hydrated]);
 
   const addItem = useCallback((product: Product, qty = 1) => {

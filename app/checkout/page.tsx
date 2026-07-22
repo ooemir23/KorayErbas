@@ -1,15 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StorefrontHeader } from "@/components/StorefrontHeader";
 import { ToastContainer, type Toast } from "@/components/Toast";
 import { useCart } from "@/lib/useCart";
+import { getCartUid } from "@/lib/cart-uid";
 import { formatTRY, buildWhatsAppLink, productLabel } from "@/lib/format";
 import { buildOrderMessage } from "@/lib/whatsapp";
 
 let toastSeq = 0;
+
+// Sepeti server'a "active" olarak senkronize et (terk sepet takibi için).
+async function syncCart(payload: {
+  cart_uid: string;
+  items: unknown[];
+  customer_name?: string;
+  customer_phone?: string;
+  total: number;
+  status?: "active" | "converted";
+}) {
+  try {
+    await fetch("/api/carts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    /* sessiz — sepet senkronu kritik değil */
+  }
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -39,6 +60,38 @@ export default function CheckoutPage() {
     lastName.trim() !== "" &&
     address.trim() !== "" &&
     phone.trim() !== "";
+
+  // Mount'ta sepeti server'a "active" olarak kaydet (terk sepet takibi).
+  // Sadece sepette ürün varken.
+  const syncedOnce = useRef(false);
+  useEffect(() => {
+    if (!cart.hydrated || syncedOnce.current) return;
+    if (cart.items.length === 0) return;
+    syncedOnce.current = true;
+    const uid = getCartUid();
+    syncCart({
+      cart_uid: uid,
+      items: cart.items,
+      total: cart.subtotal,
+    });
+  }, [cart.hydrated, cart.items, cart.subtotal]);
+
+  // Form doldukça (debounce 1sn) müşteri bilgisini güncelle.
+  useEffect(() => {
+    if (!cart.hydrated || cart.items.length === 0) return;
+    const uid = getCartUid();
+    const t = setTimeout(() => {
+      syncCart({
+        cart_uid: uid,
+        items: cart.items,
+        customer_name: `${firstName} ${lastName}`.trim() || undefined,
+        customer_phone: phone.trim() || undefined,
+        total: cart.subtotal,
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstName, lastName, phone, cart.hydrated]);
 
   async function handleSubmit() {
     if (!formValid) return;
@@ -76,6 +129,16 @@ export default function CheckoutPage() {
         total: cart.subtotal,
       });
       setWaLink(buildWhatsAppLink(phone, message));
+
+      // Sepeti "converted" olarak işaretle (terk sepetten düş).
+      syncCart({
+        cart_uid: getCartUid(),
+        items: cart.items,
+        customer_name: `${firstName} ${lastName}`.trim(),
+        customer_phone: phone.trim(),
+        total: cart.subtotal,
+        status: "converted",
+      });
 
       pushToast("Siparişiniz alındı! WhatsApp ile iletebilirsiniz.");
       cart.clear();

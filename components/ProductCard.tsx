@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { formatTRY, formatUnit } from "@/lib/format";
 
 interface ProductCardProps {
   product: Product;
-  onAdd: (product: Product) => void;
+  onAdd: (product: Product, quantity: number) => void;
   onRequest?: (product: Product) => void;
 }
 
@@ -15,6 +16,7 @@ function stockLabel(stock: number): string {
 }
 
 export function ProductCard({ product, onAdd, onRequest }: ProductCardProps) {
+  const [qty, setQty] = useState(1);
   const unit = formatUnit(product.unit_type, product.unit_value);
   const alt = `${product.brand} ${product.flavor}`.trim() || `#${product.id}`;
   const outOfStock = product.stock <= 0;
@@ -80,12 +82,58 @@ export function ProductCard({ product, onAdd, onRequest }: ProductCardProps) {
             📢 Talepte Bulun
           </button>
         ) : (
-          <button
-            onClick={() => onAdd(product)}
-            className="mt-1.5 w-full rounded-md bg-brand-600 px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-700"
-          >
-            Sepete Ekle
-          </button>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            {/* Adet kontrolü: - / input / + */}
+            <div className="flex items-center rounded-md border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                disabled={qty <= 1}
+                className="flex h-7 w-7 items-center justify-center text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Azalt"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={product.stock}
+                value={qty}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isFinite(v)) return;
+                  setQty(Math.min(Math.max(1, Math.floor(v)), product.stock));
+                }}
+                onBlur={(e) => {
+                  // Boş veya geçersizse 1'e sıfırla
+                  const v = Number(e.target.value);
+                  if (!Number.isFinite(v) || v < 1) setQty(1);
+                }}
+                className="h-7 w-9 border-x border-slate-200 text-center text-xs font-medium outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setQty((q) => Math.min(product.stock, q + 1))
+                }
+                disabled={qty >= product.stock}
+                className="flex h-7 w-7 items-center justify-center text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Artır"
+              >
+                +
+              </button>
+            </div>
+            {/* Sepete Ekle */}
+            <button
+              onClick={() => {
+                onAdd(product, qty);
+                setQty(1); // ekle sonrası sıfırla
+              }}
+              className="flex-1 rounded-md bg-brand-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
+            >
+              Sepete Ekle
+            </button>
+          </div>
         )}
       </div>
     </div>

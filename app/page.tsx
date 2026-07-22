@@ -203,11 +203,11 @@ export default function StorefrontPage() {
                           <ProductCard
                             key={p.id}
                             product={p}
-                            onAdd={(prod) => {
-                              cart.addItem(prod);
+                            onAdd={(prod, quantity) => {
+                              cart.addItem(prod, quantity);
                               pushToast(
                                 `${prod.brand} ${prod.flavor}`.trim() +
-                                  " sepete eklendi."
+                                  ` (${quantity} adet) sepete eklendi.`
                               );
                             }}
                             onRequest={(prod) => setRequestProduct(prod)}

@@ -29,7 +29,8 @@ export interface OrderItem {
   unit_type: string;
   unit_value: number;
   quantity: number;
-  unit_price: number; // Onay anındaki fiyatın kaydı
+  unit_price: number; // Satış fiyatı (onay anındaki kayıt)
+  purchase_price?: number; // Alış fiyatı (maliyet) — kâr hesabı için
 }
 
 export interface Order {
@@ -66,4 +67,47 @@ export interface CustomerRevenue {
 export interface MonthlyRevenue {
   month: string; // "2026-07"
   total: number;
+}
+
+// ── Raporlama tipleri ──
+
+export type ReportPeriod = "daily" | "monthly" | "yearly";
+
+// En çok satılan ürün (top products).
+export interface ProductSales {
+  product_id: number | null;
+  brand: string;
+  flavor: string;
+  quantity: number;
+  revenue: number; // satış cirosu
+  cost: number; // alış maliyeti
+  profit: number; // kâr (revenue - cost)
+}
+
+// Periyot kırılımı (günlük/aylık/yıllık).
+export interface PeriodBreakdown {
+  period: string; // "2026-07" / "2026-07-13" / "2026"
+  order_count: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
+// Rapor özet kartları.
+export interface ReportSummary {
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  profitMargin: number; // % (0-100)
+  orderCount: number;
+  avgOrder: number; // ortalama sepet
+}
+
+// API'den dönen tam rapor verisi.
+export interface ReportData {
+  summary: ReportSummary;
+  topProducts: ProductSales[];
+  breakdown: PeriodBreakdown[];
+  customers: CustomerRevenue[];
+  period: ReportPeriod;
 }

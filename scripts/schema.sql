@@ -43,3 +43,24 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(first_name, last_name);
 
 COMMENT ON TABLE products IS 'Ürün katalog & stok (marka + aroma + birim)';
 COMMENT ON TABLE orders  IS 'Perakende siparişler';
+
+CREATE TABLE IF NOT EXISTS requests (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER,                              -- nullable: ürün silinmiş olabilir
+  brand TEXT NOT NULL,
+  flavor TEXT NOT NULL,
+  unit_type TEXT,
+  unit_value NUMERIC(12, 2),
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'pending'            -- pending | contacted | closed
+            CHECK (status IN ('pending','contacted','closed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+CREATE INDEX IF NOT EXISTS idx_requests_created_at ON requests(created_at);
+
+COMMENT ON TABLE requests IS 'Stokta olmayan ürünler için müşteri talepleri';

@@ -4,10 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/lib/types";
 import { StorefrontHeader } from "@/components/StorefrontHeader";
 import { ProductCard } from "@/components/ProductCard";
+import { RequestModal } from "@/components/RequestModal";
 import { ToastContainer, type Toast } from "@/components/Toast";
 import { useCart } from "@/lib/useCart";
 
 let toastSeq = 0;
+
+// Mağaza sahibinin WhatsApp numarası (talep bildirimi için).
+// İsterseniz env'e taşıyabilirsiniz: process.env.NEXT_PUBLIC_STORE_PHONE.
+const STORE_PHONE = process.env.NEXT_PUBLIC_STORE_PHONE || "905555555555";
 
 export default function StorefrontPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -16,6 +21,8 @@ export default function StorefrontPage() {
   const [query, setQuery] = useState("");
   // Açık olan marka setleri (akordeon). İlk açılışta tümü açık.
   const [openBrands, setOpenBrands] = useState<Set<string> | null>(null);
+  // Talep modali için seçili ürün.
+  const [requestProduct, setRequestProduct] = useState<Product | null>(null);
 
   const cart = useCart();
 
@@ -95,7 +102,8 @@ export default function StorefrontPage() {
         <div className="mb-3">
           <h1 className="text-xl font-bold text-slate-900">Ürünler</h1>
           <p className="mt-0.5 text-xs text-slate-500">
-            Sadece stokta bulunan ürünler gösterilir.
+            Stokta olmayan ürünler için &quot;Talepte Bulun&quot; özelliğini
+            kullanabilirsiniz.
           </p>
         </div>
 
@@ -202,6 +210,7 @@ export default function StorefrontPage() {
                                   " sepete eklendi."
                               );
                             }}
+                            onRequest={(prod) => setRequestProduct(prod)}
                           />
                         ))}
                       </div>
@@ -213,6 +222,14 @@ export default function StorefrontPage() {
           </div>
         )}
       </main>
+
+      {requestProduct && (
+        <RequestModal
+          product={requestProduct}
+          storePhone={STORE_PHONE}
+          onClose={() => setRequestProduct(null)}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>

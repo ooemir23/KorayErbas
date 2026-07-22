@@ -87,28 +87,41 @@ export default function CartPage() {
                     </div>
 
                     {/* Adet kontrol */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          cart.setQuantity(item.product_id, item.quantity - 1)
-                        }
-                        className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        aria-label="Azalt"
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center font-medium">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          cart.setQuantity(item.product_id, item.quantity + 1)
-                        }
-                        className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        aria-label="Artır"
-                      >
-                        +
-                      </button>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            cart.setQuantity(item.product_id, item.quantity - 1)
+                          }
+                          className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                          aria-label="Azalt"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center font-medium">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            cart.setQuantity(item.product_id, item.quantity + 1)
+                          }
+                          disabled={item.quantity >= item.stock}
+                          className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label="Artır"
+                          title={
+                            item.quantity >= item.stock
+                              ? `Maksimum stok (${item.stock})`
+                              : "Artır"
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                      {item.quantity >= item.stock && (
+                        <span className="text-[10px] text-amber-600">
+                          Maks. stok
+                        </span>
+                      )}
                     </div>
 
                     <div className="w-24 text-right font-semibold text-slate-900">

@@ -87,6 +87,27 @@ export async function ensureSchema(): Promise<void> {
         await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`;
         await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);`;
         await sql`CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(first_name, last_name);`;
+
+        // 6) requests tablosu (out-of-stock ürün talepleri).
+        await sql`
+          CREATE TABLE IF NOT EXISTS requests (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER,
+            brand TEXT NOT NULL,
+            flavor TEXT NOT NULL,
+            unit_type TEXT,
+            unit_value NUMERIC(12, 2),
+            customer_name TEXT NOT NULL,
+            customer_phone TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            note TEXT,
+            status TEXT NOT NULL DEFAULT 'pending'
+                      CHECK (status IN ('pending','contacted','closed')),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+        `;
+        await sql`CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);`;
+        await sql`CREATE INDEX IF NOT EXISTS idx_requests_created_at ON requests(created_at);`;
       } catch (err) {
         // Başarısız olursa bir sonraki istekte tekrar denesin diye temizle.
         ensurePromise = null;

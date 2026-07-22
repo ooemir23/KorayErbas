@@ -33,20 +33,21 @@ export async function GET(request: Request) {
     }
 
     // Arama/filtre yoksa basit sorgu.
+    // Storefront (all yok) artık TÜM ürünleri döner (stok 0 dahil) —
+    // out-of-stock ürünler kartta "Talepte Bulun" ile görünür.
+    // Sıralama: önce stokta olanlar, sonra tükenenler.
     if (!q && !brand) {
       const result = all
         ? await sql<Product>`SELECT * FROM products ORDER BY brand, flavor, id DESC;`
-        : await sql<Product>`SELECT * FROM products WHERE stock > 0 ORDER BY brand, flavor, id DESC;`;
+        : await sql<Product>`SELECT * FROM products ORDER BY (stock > 0) DESC, brand, flavor, id DESC;`;
       return NextResponse.json({ products: result.rows });
     }
 
     // Arama veya marka filtresi varsa dinamik sorgu.
+    // Storefront (all yok) TÜM ürünleri döner (stok 0 dahil).
     const conditions: string[] = [];
     const values: unknown[] = [];
 
-    if (!all) {
-      conditions.push(`stock > 0`);
-    }
     if (q) {
       values.push(`%${q}%`);
       const idx = values.length;

@@ -46,3 +46,36 @@ export function buildOrderMessage(s: OrderSummary): string {
   }
   return lines.join("\n");
 }
+
+// ── Talep (out-of-stock ürün) için WhatsApp mesajı ──────────────────────
+export interface RequestSummary {
+  brand: string;
+  flavor: string;
+  unit_type?: string | null;
+  unit_value?: number | null;
+  quantity: number;
+  customer_name: string;
+  customer_phone: string;
+  note?: string | null;
+}
+
+export function buildRequestMessage(r: RequestSummary): string {
+  const lines: string[] = [];
+  lines.push("📢 *ÜRÜN TALEBİ*");
+  lines.push("━━━━━━━━━━━━━━━");
+  lines.push("");
+  const label = productLabel(r) || "Ürün";
+  const unit = formatUnit(r.unit_type, r.unit_value);
+  lines.push(`*Ürün:* ${label}${unit ? ` (${unit})` : ""}`);
+  lines.push(`*Adet:* ${r.quantity}`);
+  lines.push("");
+  lines.push("*Müşteri:*");
+  lines.push(`👤 ${r.customer_name}`);
+  lines.push(`📞 ${r.customer_phone}`);
+  if (r.note) {
+    lines.push("");
+    lines.push("*Not:*");
+    lines.push(r.note);
+  }
+  return lines.join("\n");
+}

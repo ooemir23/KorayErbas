@@ -58,6 +58,14 @@ export async function POST(request: Request) {
   const orderItems = items.map((ci) => {
     const p = productMap.get(ci.product_id);
     if (!p) throw new Error("Geçersiz ürün.");
+    // Erken stok kontrolü (nihai güvenlik admin onayında atomik).
+    const stock = Number(p.stock);
+    if (ci.quantity > stock) {
+      const label = `${p.brand} ${p.flavor}`.trim();
+      throw new Error(
+        `Yetersiz stok: ${label} (stok ${stock}, istenen ${ci.quantity}).`
+      );
+    }
     const unit_price = Number(p.retail_price);
     total += unit_price * ci.quantity;
     return {

@@ -22,6 +22,24 @@ export interface Product {
 
 export type OrderStatus = "pending" | "confirmed" | "cancelled";
 
+// Ürün talebi (out-of-stock ürünler için müşteri talebi).
+export type RequestStatus = "pending" | "contacted" | "closed";
+
+export interface ProductRequest {
+  id: number;
+  product_id: number | null;
+  brand: string;
+  flavor: string;
+  unit_type: string | null;
+  unit_value: string | null;
+  customer_name: string;
+  customer_phone: string;
+  quantity: number;
+  note: string | null;
+  status: RequestStatus;
+  created_at: string;
+}
+
 export interface OrderItem {
   product_id: number;
   brand: string;
@@ -56,6 +74,7 @@ export interface CartItem {
   unit_price: number;
   image_url: string | null;
   quantity: number;
+  stock: number; // Stok limiti için (adet stoku geçemesin)
 }
 
 export interface CustomerRevenue {

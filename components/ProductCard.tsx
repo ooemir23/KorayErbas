@@ -6,6 +6,7 @@ import { formatTRY, formatUnit } from "@/lib/format";
 interface ProductCardProps {
   product: Product;
   onAdd: (product: Product) => void;
+  onRequest?: (product: Product) => void;
 }
 
 // Stok adedini kompakt göster: 5'ten fazla ise "5+", değilse gerçek sayı.
@@ -13,11 +14,20 @@ function stockLabel(stock: number): string {
   return stock > 5 ? "5+" : String(stock);
 }
 
-export function ProductCard({ product, onAdd }: ProductCardProps) {
+export function ProductCard({ product, onAdd, onRequest }: ProductCardProps) {
   const unit = formatUnit(product.unit_type, product.unit_value);
   const alt = `${product.brand} ${product.flavor}`.trim() || `#${product.id}`;
+  const outOfStock = product.stock <= 0;
+
   return (
-    <div className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+    <div
+      className={
+        "group flex flex-col overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md " +
+        (outOfStock
+          ? "border-slate-200 opacity-75"
+          : "border-slate-200")
+      }
+    >
       <div className="relative aspect-[5/4] overflow-hidden bg-slate-100">
         {product.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -32,10 +42,16 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
             📦
           </div>
         )}
-        {/* Stok rozeti — sağ üstte, kompakt */}
-        <span className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm backdrop-blur">
-          {stockLabel(product.stock)}
-        </span>
+        {/* Stok rozeti — sağ üstte */}
+        {outOfStock ? (
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+            Tükendi
+          </span>
+        ) : (
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm backdrop-blur">
+            {stockLabel(product.stock)}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-2">
@@ -56,12 +72,21 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
           {formatTRY(product.retail_price)}
         </p>
 
-        <button
-          onClick={() => onAdd(product)}
-          className="mt-1.5 w-full rounded-md bg-brand-600 px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-700"
-        >
-          Sepete Ekle
-        </button>
+        {outOfStock ? (
+          <button
+            onClick={() => onRequest?.(product)}
+            className="mt-1.5 w-full rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+          >
+            📢 Talepte Bulun
+          </button>
+        ) : (
+          <button
+            onClick={() => onAdd(product)}
+            className="mt-1.5 w-full rounded-md bg-brand-600 px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-700"
+          >
+            Sepete Ekle
+          </button>
+        )}
       </div>
     </div>
   );

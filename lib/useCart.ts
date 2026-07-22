@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CartItem, Product } from "@/lib/types";
 
-const STORAGE_KEY = "ssy_cart_v2";
+const STORAGE_KEY = "ssy_cart_v3";
 
 // Boş sepetle başla; hydrasyon sırasında localStorage'tan yükle.
 export function useCart() {
@@ -46,6 +46,7 @@ export function useCart() {
           unit_price: product.retail_price,
           image_url: product.image_url,
           quantity: Math.min(qty, product.stock),
+          stock: product.stock,
         },
       ];
     });
@@ -56,7 +57,7 @@ export function useCart() {
       prev
         .map((i) =>
           i.product_id === productId
-            ? { ...i, quantity: Math.max(0, quantity) }
+            ? { ...i, quantity: Math.max(0, Math.min(quantity, i.stock)) }
             : i
         )
         .filter((i) => i.quantity > 0)

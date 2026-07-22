@@ -75,6 +75,23 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Siparişi DB'den tamamen siler (hard delete). Modal'daki onay akışından
+  // sonra çağrılır. Stok iade YAPMAZ — kalıcı silme.
+  async function deleteOrder(id: number) {
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Silinemedi.");
+      pushToast(`Sipariş #${id} kalıcı olarak silindi.`, "info");
+      setSelected(null);
+      load();
+    } catch (e: any) {
+      pushToast(e.message || "Silme başarısız.", "error");
+    }
+  }
+
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -196,6 +213,7 @@ export default function AdminOrdersPage() {
           order={selected}
           onClose={() => setSelected(null)}
           onUpdate={updateOrder}
+          onDelete={deleteOrder}
         />
       )}
 
@@ -210,6 +228,7 @@ function OrderDetailModal({
   order,
   onClose,
   onUpdate,
+  onDelete,
 }: {
   order: Order;
   onClose: () => void;
@@ -221,11 +240,13 @@ function OrderDetailModal({
       total_amount?: number;
     }
   ) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
 }) {
   const [items, setItems] = useState<OrderItem[]>(
     order.items.map((it) => ({ ...it }))
   );
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const total = items.reduce((s, it) => s + it.unit_price * it.quantity, 0);
 
@@ -376,6 +397,48 @@ function OrderDetailModal({
               >
                 İptal Et
               </button>
+            )}
+          </div>
+
+          {/* Tehlikeli bölge — kalıcı silme */}
+          <div className="rounded-xl border border-red-200 bg-red-50/50 p-3">
+            <p className="mb-2 text-xs text-red-700">
+              ⚠️ Kalıcı Silme: Siparişi veritabanından tamamen kaldırır
+              (geri alınamaz). Stok iade edilmez. Önce &quot;İptal Et&quot;
+              yaparak stok iadesi önerilir.
+            </p>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                disabled={saving}
+                className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+              >
+                🗑 Siparişi Komple Sil
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-red-700">
+                  Emin misiniz?
+                </span>
+                <button
+                  onClick={async () => {
+                    setSaving(true);
+                    await onDelete(order.id);
+                    setSaving(false);
+                  }}
+                  disabled={saving}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {saving ? "Siliniyor…" : "Evet, Kalıcı Olarak Sil"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={saving}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
             )}
           </div>
           {order.status !== "pending" && (

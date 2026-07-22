@@ -145,3 +145,41 @@ class HttpError extends Error {
     this.status = status;
   }
 }
+
+// DELETE /api/admin/orders/:id
+// Siparişi DB'den tamamen siler (hard delete). Dikkat: onaylı siparişte
+// stok zaten düşülmüş olabilir — stok İADE EDİLMEZ (kalıcı silme). İptal
+// (PUT cancel) stok iade yapar; hard delete yapmaz. Bu yüzden önce iptal
+// edilmesi önerilir, ama admin doğrudan da silebilir.
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  if (!(await isAuthenticated(request))) {
+    return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
+  }
+
+  const id = Number(params.id);
+  if (!Number.isInteger(id)) {
+    return NextResponse.json({ error: "Geçersiz id." }, { status: 400 });
+  }
+
+  try {
+    await ensureSchema();
+    const result = await sql`DELETE FROM orders WHERE id = ${id};`;
+    if (result.rowCount === 0) {
+      return NextResponse.json(
+        { error: "Sipariş bulunamadı." },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("[admin orders DELETE]", err);
+    const msg = err?.message || "Sipariş silinemedi.";
+    return NextResponse.json(
+      { error: `Sipariş silinemedi: ${msg}` },
+      { status: 500 }
+    );
+  }
+}

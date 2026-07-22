@@ -43,22 +43,34 @@ export async function GET(request: Request) {
     let breakdown;
     let customerRows;
     try {
+      // Tüm item satırlarını normalize eden CTE — jsonb_array_elements
+      // çıktısına alias olmadan erişip değerleri çıkarırız. Boş items
+      // array'leri jsonb_array_elements tarafından satır üretmediği için
+      // o siparişler item_lines'ta yer almaz (doğru davranış).
+      const itemLines = `
+        SELECT
+          o.id AS order_id,
+          (j.item->>'quantity')::numeric AS qty,
+          COALESCE((j.item->>'unit_price')::numeric, 0) AS sell,
+          COALESCE(
+            NULLIF(j.item->>'purchase_price','')::numeric,
+            p.purchase_price,
+            0
+          ) AS cost,
+          NULLIF(j.item->>'product_id','')::int AS pid,
+          COALESCE(j.item->>'brand','') AS brand,
+          COALESCE(j.item->>'flavor','') AS flavor
+        FROM orders o
+        CROSS JOIN LATERAL (
+          SELECT jsonb_array_elements(o.items) AS item
+        ) AS j
+        LEFT JOIN products p ON p.id = NULLIF(j.item->>'product_id','')::int
+        WHERE o.status = 'confirmed'
+      `;
+
+      // ── 1) Özet (özet kartları için) ────────────────────────────────
       summaryRows = await client.query(`
-        WITH item_lines AS (
-          SELECT
-            o.id AS order_id,
-            (elem->>'quantity')::numeric AS qty,
-            COALESCE((elem->>'unit_price')::numeric, 0) AS sell,
-            COALESCE(
-              NULLIF(elem->>'purchase_price','')::numeric,
-              p.purchase_price,
-              0
-            ) AS cost
-          FROM orders o
-          LEFT JOIN LATERAL jsonb_array_elements(o.items) AS elem ON true
-          LEFT JOIN products p ON p.id = (elem->>'product_id')::int
-          WHERE o.status = 'confirmed'
-        )
+        WITH item_lines AS (${itemLines})
         SELECT
           COALESCE(SUM(qty * sell), 0)::float8 AS revenue,
           COALESCE(SUM(qty * cost), 0)::float8 AS cost,
@@ -69,30 +81,17 @@ export async function GET(request: Request) {
 
       // ── 2) En çok satılan ürünler (top 10) ─────────────────────────
       topRows = await client.query(`
+        WITH item_lines AS (${itemLines})
         SELECT
-          NULLIF(elem->>'product_id','')::int AS product_id,
-          COALESCE(elem->>'brand','') AS brand,
-          COALESCE(elem->>'flavor','') AS flavor,
-          SUM((elem->>'quantity')::numeric)::float8 AS quantity,
-          SUM((elem->>'quantity')::numeric * COALESCE((elem->>'unit_price')::numeric,0))::float8 AS revenue,
-          SUM((elem->>'quantity')::numeric * COALESCE(
-            NULLIF(elem->>'purchase_price','')::numeric,
-            p.purchase_price,
-            0
-          ))::float8 AS cost,
-          SUM((elem->>'quantity')::numeric *
-            (COALESCE((elem->>'unit_price')::numeric,0) -
-             COALESCE(
-               NULLIF(elem->>'purchase_price','')::numeric,
-               p.purchase_price,
-               0
-             ))
-          )::float8 AS profit
-        FROM orders o
-        CROSS JOIN LATERAL jsonb_array_elements(o.items) AS elem
-        LEFT JOIN products p ON p.id = (elem->>'product_id')::int
-        WHERE o.status = 'confirmed'
-        GROUP BY p.id, COALESCE(elem->>'product_id',''), COALESCE(elem->>'brand',''), COALESCE(elem->>'flavor','')
+          pid AS product_id,
+          brand,
+          flavor,
+          SUM(qty)::float8 AS quantity,
+          SUM(qty * sell)::float8 AS revenue,
+          SUM(qty * cost)::float8 AS cost,
+          SUM(qty * (sell - cost))::float8 AS profit
+        FROM item_lines
+        GROUP BY pid, brand, flavor
         ORDER BY quantity DESC
         LIMIT 10;
       `);

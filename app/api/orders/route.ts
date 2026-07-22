@@ -55,30 +55,38 @@ export async function POST(request: Request) {
   }
 
   let total = 0;
-  const orderItems = items.map((ci) => {
-    const p = productMap.get(ci.product_id);
-    if (!p) throw new Error("Geçersiz ürün.");
-    // Erken stok kontrolü (nihai güvenlik admin onayında atomik).
-    const stock = Number(p.stock);
-    if (ci.quantity > stock) {
-      const label = `${p.brand} ${p.flavor}`.trim();
-      throw new Error(
-        `Yetersiz stok: ${label} (stok ${stock}, istenen ${ci.quantity}).`
-      );
-    }
-    const unit_price = Number(p.retail_price);
-    total += unit_price * ci.quantity;
-    return {
-      product_id: p.id,
-      brand: p.brand,
-      flavor: p.flavor,
-      unit_type: p.unit_type,
-      unit_value: Number(p.unit_value),
-      quantity: ci.quantity,
-      unit_price,
-      purchase_price: Number(p.purchase_price) || 0,
-    };
-  });
+  let orderItems;
+  try {
+    orderItems = items.map((ci) => {
+      const p = productMap.get(ci.product_id);
+      if (!p) throw new Error("Geçersiz ürün.");
+      // Erken stok kontrolü (nihai güvenlik admin onayında atomik).
+      const stock = Number(p.stock);
+      if (ci.quantity > stock) {
+        const label = `${p.brand} ${p.flavor}`.trim();
+        throw new Error(
+          `Yetersiz stok: ${label} (stok ${stock}, istenen ${ci.quantity}).`
+        );
+      }
+      const unit_price = Number(p.retail_price);
+      total += unit_price * ci.quantity;
+      return {
+        product_id: p.id,
+        brand: p.brand,
+        flavor: p.flavor,
+        unit_type: p.unit_type,
+        unit_value: Number(p.unit_value),
+        quantity: ci.quantity,
+        unit_price,
+        purchase_price: Number(p.purchase_price) || 0,
+      };
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "Geçersiz sipariş." },
+      { status: 400 }
+    );
+  }
 
   const txClient = await sql.connect();
   try {

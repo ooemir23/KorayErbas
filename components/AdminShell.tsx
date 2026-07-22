@@ -23,20 +23,46 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-7xl">
-        {/* Sidebar */}
+      {/* Mobil üst bar — hamburger menü */}
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-3 lg:hidden">
+        <button
+          onClick={() => setOpen(true)}
+          className="rounded-lg p-2 text-slate-600 hover:bg-slate-50"
+          aria-label="Menü"
+        >
+          ☰
+        </button>
+        <span className="flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-brand-600 text-xs font-bold text-white">
+            S
+          </span>
+          <span className="text-sm font-bold text-slate-900">Yönetim</span>
+        </span>
+        <Link
+          href="/"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-50"
+          aria-label="Mağazaya dön"
+        >
+          ←
+        </Link>
+      </header>
+
+      <div className="mx-auto flex">
+        {/* Sidebar — mobilde overlay, masaüstünde sabit */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-60 transform border-r border-slate-200 bg-white transition-transform lg:static lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-slate-200 bg-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex h-16 items-center gap-2 border-b border-slate-200 px-5">
+          {/* Logo başlığı */}
+          <div className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 px-5">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white">
               S
             </span>
             <span className="font-bold text-slate-900">Yönetim</span>
           </div>
-          <nav className="space-y-1 p-3">
+          {/* Nav — esneyerek boşluğu doldurur */}
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
             {NAV.map((item) => {
               const active =
                 item.href === "/admin"
@@ -59,7 +85,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="absolute inset-x-0 bottom-0 p-3">
+          {/* Alt aksiyonlar — her zaman en altta, çakışmasız */}
+          <div className="shrink-0 space-y-1 border-t border-slate-200 p-3">
             <button
               onClick={logout}
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600"
@@ -68,7 +95,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
             <Link
               href="/"
-              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
             >
               ← Mağazaya Dön
             </Link>
@@ -84,19 +112,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* İçerik */}
-        <div className="flex-1">
-          <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
-            <button
-              onClick={() => setOpen(true)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-50 lg:hidden"
-              aria-label="Menü"
-            >
-              ☰
-            </button>
+        <div className="min-w-0 flex-1">
+          {/* Masaüstü header */}
+          <header className="sticky top-0 z-20 hidden h-16 items-center border-b border-slate-200 bg-white px-6 lg:flex">
             <h1 className="font-semibold text-slate-800">Admin Paneli</h1>
-            <div className="w-8" />
           </header>
-          <main className="p-4 lg:p-6">{children}</main>
+          <main className="p-3 sm:p-4 lg:p-6">{children}</main>
         </div>
       </div>
     </div>

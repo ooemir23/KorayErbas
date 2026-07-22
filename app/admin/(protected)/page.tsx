@@ -113,52 +113,82 @@ export default function AdminOrdersPage() {
           <p className="mt-2 font-medium text-slate-700">Sipariş yok.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">#</th>
-                <th className="px-4 py-3 font-medium">Müşteri</th>
-                <th className="px-4 py-3 font-medium">Tutar</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
-                <th className="px-4 py-3 font-medium">Tarih</th>
-                <th className="px-4 py-3 text-right font-medium">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {orders.map((o) => (
-                <tr key={o.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">#{o.id}</td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {o.first_name} {o.last_name}
-                    <div className="text-xs text-slate-400">{o.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">
-                    {formatTRY(o.total_amount)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_META[o.status].cls}`}
-                    >
-                      {STATUS_META[o.status].label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {formatDate(o.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setSelected(o)}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      Detay / Düzenle
-                    </button>
-                  </td>
+        <>
+          {/* Masaüstü: tablo */}
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white sm:block">
+            <table className="w-full text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-medium">#</th>
+                  <th className="px-4 py-3 font-medium">Müşteri</th>
+                  <th className="px-4 py-3 font-medium">Tutar</th>
+                  <th className="px-4 py-3 font-medium">Durum</th>
+                  <th className="px-4 py-3 font-medium">Tarih</th>
+                  <th className="px-4 py-3 text-right font-medium">İşlem</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {orders.map((o) => (
+                  <tr key={o.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium text-slate-900">#{o.id}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {o.first_name} {o.last_name}
+                      <div className="text-xs text-slate-400">{o.phone}</div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">
+                      {formatTRY(o.total_amount)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_META[o.status].cls}`}
+                      >
+                        {STATUS_META[o.status].label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {formatDate(o.created_at)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => setSelected(o)}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Detay / Düzenle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobil: kart listesi */}
+          <div className="space-y-2 sm:hidden">
+            {orders.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => setSelected(o)}
+                className="flex w-full flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left active:bg-slate-50"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-900">#{o.id}</span>
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_META[o.status].cls}`}
+                  >
+                    {STATUS_META[o.status].label}
+                  </span>
+                </div>
+                <div className="text-sm text-slate-700">
+                  {o.first_name} {o.last_name}
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>{formatTRY(o.total_amount)}</span>
+                  <span>{formatDate(o.created_at)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {selected && (

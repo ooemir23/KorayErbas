@@ -14,6 +14,7 @@ export default function AdminStockPage() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState(""); // Ürün arama (marka/aroma/birim)
 
   const pushToast = useCallback(
     (message: string, type: Toast["type"] = "success") => {
@@ -61,6 +62,7 @@ export default function AdminStockPage() {
   // Sıralama: önce tükenen, sonra kritik (kritiklik azalan), sonra normal.
   // Filtre uygulanmış liste.
   const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
     const ranked = products.map((p) => {
       const out = p.stock <= 0;
       const critical =
@@ -73,17 +75,27 @@ export default function AdminStockPage() {
       };
     });
     const filtered = ranked.filter((r) => {
-      if (filter === "out") return r.out;
-      if (filter === "critical") return r.critical;
+      // Status filtresi.
+      if (filter === "out" && !r.out) return false;
+      if (filter === "critical" && !r.critical) return false;
+      // Ürün arama filtresi (marka/aroma/birim).
+      if (q) {
+        const p = r.p;
+        const matches =
+          p.brand?.toLowerCase().includes(q) ||
+          p.flavor?.toLowerCase().includes(q) ||
+          p.unit_type?.toLowerCase().includes(q) ||
+          String(p.unit_value).includes(q);
+        if (!matches) return false;
+      }
       return true;
     });
     filtered.sort((a, b) => {
       if (a.rank !== b.rank) return a.rank - b.rank;
-      // Tükenenler içinde ada'a göre; kritiklerde kritiklik (stock/threshold) azalan.
       return a.p.brand.localeCompare(b.p.brand);
     });
     return filtered;
-  }, [products, filter]);
+  }, [products, filter, query]);
 
   return (
     <div>
@@ -122,6 +134,16 @@ export default function AdminStockPage() {
         />
       </div>
 
+      {/* Ürün arama kutusu */}
+      <div className="mb-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔍 Ürün ara (marka, aroma veya birim)…"
+          className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+      </div>
+
       {/* Filtre sekmeleri */}
       <div className="mb-4 flex flex-wrap gap-2">
         {([
@@ -155,7 +177,9 @@ export default function AdminStockPage() {
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
           <p className="text-4xl">📦</p>
           <p className="mt-2 font-medium text-slate-700">
-            {filter === "out"
+            {query
+              ? "Aramanızla eşleşen ürün yok."
+              : filter === "out"
               ? "Tükenen ürün yok. 🎉"
               : filter === "critical"
               ? "Kritik stokta ürün yok."

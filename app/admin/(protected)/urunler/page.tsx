@@ -140,15 +140,9 @@ export default function AdminProductsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setBulkOpen(true)}
-            className="rounded-lg border border-brand-300 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
-          >
-            + Yeni Marka (Çoklu Aroma)
-          </button>
-          <button
-            onClick={() => setEditing("new")}
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
           >
-            + Yeni Ürün
+            + Yeni Marka (Çoklu Aroma)
           </button>
         </div>
       </div>

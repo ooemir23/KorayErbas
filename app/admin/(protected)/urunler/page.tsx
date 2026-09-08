@@ -765,7 +765,7 @@ function BulkProductModal({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">Satış Fiyatı (₺) — varsayılan</label>
+              <label className="text-sm font-medium text-slate-700">Satış Fiyatı (₺)</label>
               <input
                 type="number" min={0} step="0.01" value={defaultRetail}
                 onChange={(e) => setDefaultRetail(Number(e.target.value))}

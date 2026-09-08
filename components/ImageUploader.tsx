@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/imageCompression";
 
 interface ImageUploaderProps {
@@ -22,6 +22,13 @@ export function ImageUploader({ initialUrl, onUploaded }: ImageUploaderProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // initialUrl sonradan değişirse (örn. markanın mevcut görseli yüklenince)
+  // önizlemeyi güncelle. Kullanıcının kendi yüklediği görsel korunur.
+  useEffect(() => {
+    setPreview(initialUrl ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl]);
 
   async function handleFile(file: File) {
     setError(null);

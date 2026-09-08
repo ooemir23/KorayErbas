@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/lib/types";
 import { StorefrontHeader } from "@/components/StorefrontHeader";
+import { CartDrawer } from "@/components/CartDrawer";
 import { ProductCard } from "@/components/ProductCard";
 import { RequestModal } from "@/components/RequestModal";
 import { ToastContainer, type Toast } from "@/components/Toast";
@@ -23,6 +24,8 @@ export default function StorefrontPage() {
   const [openBrands, setOpenBrands] = useState<Set<string> | null>(null);
   // Talep modali için seçili ürün.
   const [requestProduct, setRequestProduct] = useState<Product | null>(null);
+  // Sağdan açılan sepet çekmecesi.
+  const [cartOpen, setCartOpen] = useState(false);
 
   const cart = useCart();
 
@@ -209,6 +212,8 @@ export default function StorefrontPage() {
                                 `${prod.brand} ${prod.flavor}`.trim() +
                                   ` (${quantity} adet) sepete eklendi.`
                               );
+                              // Sepeti sağ panelde göster.
+                              setCartOpen(true);
                             }}
                             onRequest={(prod) => setRequestProduct(prod)}
                           />
@@ -230,6 +235,16 @@ export default function StorefrontPage() {
           onClose={() => setRequestProduct(null)}
         />
       )}
+
+      {/* Sağdan açılan sepet çekmecesi */}
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={cart.items}
+        subtotal={cart.subtotal}
+        setQuantity={cart.setQuantity}
+        removeItem={cart.removeItem}
+      />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>

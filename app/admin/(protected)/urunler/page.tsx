@@ -25,6 +25,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const pushToast = useCallback(
@@ -91,12 +92,20 @@ export default function AdminProductsPage() {
           <h2 className="text-xl font-bold text-slate-900">Ürünler</h2>
           <p className="text-sm text-slate-500">Katalog ve stok yönetimi.</p>
         </div>
-        <button
-          onClick={() => setEditing("new")}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          + Yeni Ürün
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setBulkOpen(true)}
+            className="rounded-lg border border-brand-300 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+          >
+            + Yeni Marka (Çoklu Aroma)
+          </button>
+          <button
+            onClick={() => setEditing("new")}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            + Yeni Ürün
+          </button>
+        </div>
       </div>
 
       {/* Arama */}
@@ -193,6 +202,17 @@ export default function AdminProductsPage() {
             );
           })}
         </div>
+      )}
+
+      {bulkOpen && (
+        <BulkProductModal
+          onClose={() => setBulkOpen(false)}
+          onSaved={() => {
+            setBulkOpen(false);
+            load();
+          }}
+          pushToast={pushToast}
+        />
       )}
 
       {editing && (
@@ -478,6 +498,293 @@ function ProductFormModal({
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
             {saving ? "Kaydediliyor…" : "Kaydet"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Tek marka + çoklu aroma toplu ekleme modalı.
+// Marka görseli tüm aromalara (ve istenirse markanın mevcut ürünlerine) uygulanır.
+interface AromaRow {
+  flavor: string;
+  stock: number;
+  retail_price: number;
+}
+
+function BulkProductModal({
+  onClose,
+  onSaved,
+  pushToast,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+  pushToast: (m: string, t?: Toast["type"]) => void;
+}) {
+  const [brand, setBrand] = useState("");
+  const [brandQuery, setBrandQuery] = useState("");
+  const [brands, setBrands] = useState<string[]>([]);
+  const [image_url, setImageUrl] = useState<string | null>(null);
+  const [unit_type, setUnitType] = useState<string>("gram");
+  const [unit_value, setUnitValue] = useState(0);
+  const [purchase_price, setPurchasePrice] = useState(0);
+  const [defaultRetail, setDefaultRetail] = useState(0);
+  const [critical_threshold, setCriticalThreshold] = useState(5);
+  const [applyImageToBrand, setApplyImageToBrand] = useState(true);
+  const [rows, setRows] = useState<AromaRow[]>([
+    { flavor: "", stock: 0, retail_price: 0 },
+  ]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/products?brands=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBrands(Array.isArray(d.brands) ? d.brands : []))
+      .catch(() => {});
+  }, []);
+
+  const brandSuggestions = useMemo(() => {
+    const q = brandQuery.trim().toLowerCase();
+    if (!q) return brands;
+    return brands.filter((b) => b.toLowerCase().includes(q));
+  }, [brands, brandQuery]);
+
+  function setRow(i: number, patch: Partial<AromaRow>) {
+    setRows((prev) =>
+      prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
+    );
+  }
+  function addRow() {
+    setRows((prev) => [...prev, { flavor: "", stock: 0, retail_price: 0 }]);
+  }
+  function removeRow(i: number) {
+    setRows((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function save() {
+    if (!brand.trim()) {
+      pushToast("Marka zorunludur.", "error");
+      return;
+    }
+    const valid = rows.filter((r) => r.flavor.trim());
+    if (valid.length === 0) {
+      pushToast("En az bir aroma adı girin.", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brand,
+          unit_type,
+          unit_value,
+          image_url,
+          purchase_price,
+          retail_price: defaultRetail,
+          critical_threshold,
+          apply_image_to_brand: applyImageToBrand,
+          items: valid,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Kayıt başarısız.");
+
+      let msg = `${data.created.length} aroma eklendi`;
+      if (data.skipped?.length) msg += `, ${data.skipped.length} zaten mevcut (atlandı)`;
+      if (data.brandImageUpdated > 0)
+        msg += `, ${data.brandImageUpdated} mevcut ürünün görseli güncellendi`;
+      msg += ".";
+      pushToast(msg);
+      onSaved();
+    } catch (e: any) {
+      pushToast(e.message || "Kayıt başarısız.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto scroll-thin rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">
+              Yeni Marka — Çoklu Aroma
+            </h3>
+            <p className="text-xs text-slate-400">
+              Bir marka, tek görsel; birden fazla aromayı tek seferde ekleyin.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          {/* Marka görseli */}
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Marka Görseli
+            </label>
+            <p className="mb-2 text-xs text-slate-400">
+              Bu görsel markanın tüm aromalarında gösterilir.
+            </p>
+            <ImageUploader initialUrl={image_url} onUploaded={setImageUrl} />
+          </div>
+
+          {/* Marka */}
+          <div>
+            <label className="text-sm font-medium text-slate-700">Marka *</label>
+            <input
+              list="bulk-brand-options"
+              value={brand}
+              onChange={(e) => {
+                setBrand(e.target.value);
+                setBrandQuery(e.target.value);
+              }}
+              placeholder="MustHave, Adalya… (yazınca önerir)"
+              autoComplete="off"
+              className={inputCls}
+            />
+            <datalist id="bulk-brand-options">
+              {brandSuggestions.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
+            <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={applyImageToBrand}
+                onChange={(e) => setApplyImageToBrand(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Bu görseli markanın mevcut tüm ürünlerine de uygula
+            </label>
+          </div>
+
+          {/* Birim + ortak alanlar */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Birim Tipi *</label>
+              <select value={unit_type} onChange={(e) => setUnitType(e.target.value)} className={inputCls}>
+                {UNIT_TYPES.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Miktar</label>
+              <input
+                type="number" min={0} step="0.01" value={unit_value}
+                onChange={(e) => setUnitValue(Number(e.target.value))}
+                placeholder="örn. 250"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Alış Fiyatı (₺)</label>
+              <input
+                type="number" min={0} step="0.01" value={purchase_price}
+                onChange={(e) => setPurchasePrice(Number(e.target.value))}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Satış Fiyatı (₺) — varsayılan</label>
+              <input
+                type="number" min={0} step="0.01" value={defaultRetail}
+                onChange={(e) => setDefaultRetail(Number(e.target.value))}
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Kritik eşik */}
+          <div className="sm:w-1/2 lg:w-1/4">
+            <label className="text-sm font-medium text-slate-700">
+              Kritik Stok Eşiği
+            </label>
+            <input
+              type="number" min={0} value={critical_threshold}
+              onChange={(e) => setCriticalThreshold(Number(e.target.value))}
+              className={inputCls}
+            />
+          </div>
+
+          {/* Aroma satırları */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700">
+                Aromalar ({rows.filter((r) => r.flavor.trim()).length} geçerli)
+              </label>
+              <button
+                onClick={addRow}
+                className="rounded-md border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
+              >
+                + Aroma Ekle
+              </button>
+            </div>
+            <div className="space-y-2">
+              {rows.map((row, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={row.flavor}
+                    onChange={(e) => setRow(i, { flavor: e.target.value })}
+                    placeholder={`Aroma ${i + 1} — örn. Elma, Çilek…`}
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  />
+                  <input
+                    type="number" min={0} value={row.stock}
+                    onChange={(e) => setRow(i, { stock: Number(e.target.value) })}
+                    placeholder="Stok"
+                    title="Stok"
+                    className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-brand-500"
+                  />
+                  <input
+                    type="number" min={0} step="0.01" value={row.retail_price}
+                    onChange={(e) => setRow(i, { retail_price: Number(e.target.value) })}
+                    placeholder="Satış ₺ (0 = varsayılan)"
+                    title="Satış fiyatı (boş/0 = varsayılan)"
+                    className="w-36 rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-brand-500"
+                  />
+                  <button
+                    onClick={() => removeRow(i)}
+                    disabled={rows.length === 1}
+                    aria-label="Satırı kaldır"
+                    className="rounded-md border border-red-200 px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Satış fiyatı 0 bırakılırsa varsayılan satış fiyatı kullanılır.
+              Aynı marka+aroma zaten varsa o satır atlanır.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            İptal
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {saving ? "Kaydediliyor…" : `${rows.filter((r) => r.flavor.trim()).length} Aromayı Kaydet`}
           </button>
         </div>
       </div>

@@ -186,6 +186,39 @@ export default function AdminProductsPage() {
         </select>
       </div>
 
+      {/* Hızlı marka seçimi — arama çubuğunun altında */}
+      {allBrands.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setBrandFilter("all")}
+            className={
+              "rounded-full border px-3 py-1 text-xs font-medium transition " +
+              (brandFilter === "all"
+                ? "border-brand-500 bg-brand-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100")
+            }
+          >
+            Tümü ({products.length})
+          </button>
+          {allBrands.map((b) => (
+            <button
+              key={b}
+              onClick={() =>
+                setBrandFilter(brandFilter === b ? "all" : b)
+              }
+              className={
+                "rounded-full border px-3 py-1 text-xs font-medium transition " +
+                (brandFilter === b
+                  ? "border-brand-500 bg-brand-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100")
+              }
+            >
+              {b} ({products.filter((p) => p.brand === b).length})
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (

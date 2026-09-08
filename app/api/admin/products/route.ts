@@ -60,10 +60,19 @@ export async function POST(request: Request) {
   try {
     await ensureSchema();
 
+    // Marka tekrarını önle: aynı isim (harf farkıyla bile) varsa
+    // mevcut yazımı kullan.
+    const existingBrand = await sql`
+      SELECT brand FROM products
+      WHERE LOWER(brand) = ${brand.toLowerCase()}
+      LIMIT 1;
+    `;
+    const finalBrand = existingBrand.rows[0]?.brand || brand;
+
     // Benzersizlik kontrolü: marka + aroma + birim tipi + miktar
     const existing = await sql`
       SELECT 1 FROM products
-      WHERE brand = ${brand}
+      WHERE brand = ${finalBrand}
         AND flavor = ${flavor}
         AND unit_type = ${unit_type}
         AND unit_value = ${unit_value}
@@ -72,7 +81,7 @@ export async function POST(request: Request) {
     if (existing.rowCount && existing.rowCount > 0) {
       return NextResponse.json(
         {
-          error: `Bu ürün zaten mevcut: ${brand} ${flavor} (${unit_value} ${unit_type}). Aynı marka/aroma/birim kombinasyonuyla tekrar eklenemez.`,
+          error: `Bu ürün zaten mevcut: ${finalBrand} ${flavor} (${unit_value} ${unit_type}). Aynı marka/aroma/birim kombinasyonuyla tekrar eklenemez.`,
         },
         { status: 409 }
       );
@@ -80,7 +89,7 @@ export async function POST(request: Request) {
 
     const result = await sql`
       INSERT INTO products (brand, flavor, unit_type, unit_value, image_url, purchase_price, retail_price, stock, critical_threshold)
-      VALUES (${brand}, ${flavor}, ${unit_type}, ${unit_value}, ${image_url}, ${purchase_price}, ${retail_price}, ${stock}, ${critical_threshold})
+      VALUES (${finalBrand}, ${flavor}, ${unit_type}, ${unit_value}, ${image_url}, ${purchase_price}, ${retail_price}, ${stock}, ${critical_threshold})
       RETURNING *;
     `;
     return NextResponse.json({ product: result.rows[0] }, { status: 201 });

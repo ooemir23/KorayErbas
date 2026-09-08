@@ -39,6 +39,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Marka zorunludur." }, { status: 400 });
   }
 
+  // Marka tekrarını önle: aynı isim (büyük/küçük harf farkı olsa bile)
+  // zaten varsa mevcut yazımını kullan.
+  const existingBrand = await sql`
+    SELECT brand FROM products
+    WHERE LOWER(brand) = ${brand.toLowerCase()}
+    LIMIT 1;
+  `;
+  const finalBrand = existingBrand.rows[0]?.brand || brand;
+
   const unit_type_raw = (body.unit_type || "").trim();
   const unit_type = UNIT_TYPES.includes(unit_type_raw as UnitType)
     ? unit_type_raw
@@ -97,17 +106,17 @@ export async function POST(request: Request) {
           `SELECT 1 FROM products
            WHERE brand = $1 AND flavor = $2 AND unit_type = $3 AND unit_value = $4
            LIMIT 1;`,
-          [brand, row.flavor, unit_type, unit_value]
+          [finalBrand, row.flavor, unit_type, unit_value]
         );
         if (existing.rowCount && existing.rowCount > 0) {
-          skipped.push(`${brand} ${row.flavor}`);
+          skipped.push(`${finalBrand} ${row.flavor}`);
           continue;
         }
         const result = await client.query(
           `INSERT INTO products (brand, flavor, unit_type, unit_value, image_url, purchase_price, retail_price, stock, critical_threshold)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *;`,
           [
-            brand,
+            finalBrand,
             row.flavor,
             unit_type,
             unit_value,
@@ -125,7 +134,7 @@ export async function POST(request: Request) {
       if (body.apply_image_to_brand && image_url) {
         const upd = await client.query(
           `UPDATE products SET image_url = $1 WHERE brand = $2 AND (image_url IS NULL OR image_url <> $1);`,
-          [image_url, brand]
+          [image_url, finalBrand]
         );
         return NextResponse.json({
           created,

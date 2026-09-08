@@ -658,6 +658,48 @@ function BulkProductModal({
                 <option key={b} value={b} />
               ))}
             </datalist>
+            {/* Mevcut markalar — tıklayınca seçilir */}
+            {brands.length > 0 && (
+              <div className="mt-2">
+                <p className="mb-1 text-xs text-slate-400">
+                  Kayıtlı markalar ({brands.length}) — tıklayarak seçin:
+                </p>
+                <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto scroll-thin">
+                  {brandSuggestions.slice(0, 30).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => {
+                        setBrand(b);
+                        setBrandQuery(b);
+                      }}
+                      className={
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition " +
+                        (brand.trim().toLowerCase() === b.toLowerCase()
+                          ? "border-brand-500 bg-brand-600 text-white"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100")
+                      }
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Marka zaten mevcutsa bilgilendir */}
+            {(() => {
+              const exists = brands.some(
+                (b) => b.toLowerCase() === brand.trim().toLowerCase()
+              );
+              if (!brand.trim() || !exists) return null;
+              return (
+                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  ℹ️ <strong>{brand}</strong> markası zaten kayıtlı. Yeni ürün
+                  tekrar oluşturulmayacak; aromalar bu markaya eklenecek
+                  (aynı aroma zaten varsa atlanır).
+                </p>
+              );
+            })()}
             <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
               <input
                 type="checkbox"

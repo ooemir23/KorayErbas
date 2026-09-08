@@ -583,7 +583,11 @@ function BulkProductModal({
     );
   }
   function addRow() {
-    setRows((prev) => [...prev, { flavor: "", stock: 0, retail_price: 0 }]);
+    // Yeni satır, mevcut varsayılan satış fiyatıyla başlar.
+    setRows((prev) => [
+      ...prev,
+      { flavor: "", stock: 0, retail_price: defaultRetail },
+    ]);
   }
   function removeRow(i: number) {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
@@ -768,7 +772,17 @@ function BulkProductModal({
               <label className="text-sm font-medium text-slate-700">Satış Fiyatı (₺)</label>
               <input
                 type="number" min={0} step="0.01" value={defaultRetail}
-                onChange={(e) => setDefaultRetail(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setDefaultRetail(v);
+                  // Henüz özel fiyat girilmemiş satırlara (0 olanlar)
+                  // yeni varsayılanı otomatik yansıt.
+                  setRows((prev) =>
+                    prev.map((r) =>
+                      r.retail_price === 0 ? { ...r, retail_price: v } : r
+                    )
+                  );
+                }}
                 className={inputCls}
               />
             </div>

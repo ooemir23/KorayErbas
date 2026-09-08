@@ -400,7 +400,7 @@ function OrderDetailModal({
             </div>
           </div>
           <p className="-mt-3 text-xs text-slate-400">
-            Toplam tutarı elle düzenleyebilirsiniz (örn. indirim). "↻ Hesapla"
+            Toplam tutarı elle düzenleyebilirsiniz (örn. indirim). &quot;↻ Hesapla&quot;
             ürünlerden otomatik hesaplar ({formatTRY(autoTotal)}).
           </p>
 

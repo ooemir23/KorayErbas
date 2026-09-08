@@ -32,11 +32,11 @@ export function CartDrawer({
       }
       aria-hidden={!open}
     >
-      {/* Karartma */}
+      {/* Karartma — sadece mobilde (masaüstünde sepet sabit panel olarak kalır) */}
       <div
         onClick={onClose}
         className={
-          "absolute inset-0 bg-black/40 transition-opacity duration-200 " +
+          "absolute inset-0 bg-black/40 transition-opacity duration-200 lg:hidden " +
           (open ? "opacity-100" : "opacity-0")
         }
       />

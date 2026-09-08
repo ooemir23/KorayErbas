@@ -97,7 +97,12 @@ export default function StorefrontPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div
+      className={
+        "min-h-screen transition-[padding] duration-300 " +
+        (cartOpen ? "lg:pr-[384px]" : "")
+      }
+    >
       <StorefrontHeader cartCount={cart.count} />
 
       <main className="mx-auto max-w-6xl px-3 py-4">

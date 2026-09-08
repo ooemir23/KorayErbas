@@ -26,6 +26,9 @@ export default function AdminProductsPage() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  // Marka filtresi ve sıralama.
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("brand-asc");
   const [query, setQuery] = useState("");
 
   const pushToast = useCallback(
@@ -72,10 +75,17 @@ export default function AdminProductsPage() {
   }
 
   // Tüm alanlarda arama (marka, aroma, birim tipi).
+  const allBrands = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => p.brand && set.add(p.brand));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [products]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((p) => {
+    let list = products.filter((p) => {
+      // Marka filtresi (seçiliyse yalnız o marka).
+      if (brandFilter !== "all" && p.brand !== brandFilter) return false;
       return (
         p.brand?.toLowerCase().includes(q) ||
         p.flavor?.toLowerCase().includes(q) ||
@@ -83,7 +93,42 @@ export default function AdminProductsPage() {
         String(p.unit_value).includes(q)
       );
     });
-  }, [products, query]);
+
+    // Sıralama.
+    list = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "brand-asc":
+          return (
+            (a.brand || "").localeCompare(b.brand || "", "tr") ||
+            (a.flavor || "").localeCompare(b.flavor || "", "tr")
+          );
+        case "brand-desc":
+          return (
+            (b.brand || "").localeCompare(a.brand || "", "tr") ||
+            (b.flavor || "").localeCompare(a.flavor || "", "tr")
+          );
+        case "new":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "old":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "stock-asc":
+          return a.stock - b.stock;
+        case "stock-desc":
+          return b.stock - a.stock;
+        case "price-asc":
+          return Number(a.retail_price) - Number(b.retail_price);
+        case "price-desc":
+          return Number(b.retail_price) - Number(a.retail_price);
+        default:
+          return 0;
+      }
+    });
+    return list;
+  }, [products, query, brandFilter, sortBy]);
 
   return (
     <div>
@@ -108,14 +153,43 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Arama */}
-      <div className="mb-4">
+      {/* Arama + Marka filtresi + Sıralama */}
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="🔍 Marka, aroma veya birim ara…"
-          className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          className="block flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
         />
+        <select
+          value={brandFilter}
+          onChange={(e) => setBrandFilter(e.target.value)}
+          title="Markaya göre filtrele"
+          className="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-52"
+        >
+          <option value="all">Tüm Markalar ({allBrands.length})</option>
+          {allBrands.map((b) => (
+            <option key={b} value={b}>
+              {b} (
+              {products.filter((p) => p.brand === b).length})
+            </option>
+          ))}
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          title="Sıralama"
+          className="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-52"
+        >
+          <option value="brand-asc">Marka A → Z</option>
+          <option value="brand-desc">Marka Z → A</option>
+          <option value="new">En Yeni</option>
+          <option value="old">En Eski</option>
+          <option value="stock-asc">Stok (azalan)</option>
+          <option value="stock-desc">Stok (artan)</option>
+          <option value="price-asc">Fiyat (artan)</option>
+          <option value="price-desc">Fiyat (azalan)</option>
+        </select>
       </div>
 
       {loading ? (

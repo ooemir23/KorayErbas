@@ -1,9 +1,11 @@
-// Para biyatlama yardımcısı.
-export function formatTRY(n: number): string {
+// Para biçimleme yardımcısı.
+// Not: DB'den fiyat string ("1200.00") gelebilir — Number()'a çevrilir.
+export function formatTRY(n: number | string): string {
+  const value = Number(n);
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency: "TRY",
-  }).format(Number.isFinite(n) ? n : 0);
+  }).format(Number.isFinite(value) ? value : 0);
 }
 
 // Tarihi "13 Tem 2026, 15:35" gibi gösterir.

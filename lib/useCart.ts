@@ -75,7 +75,7 @@ export function useCart() {
           flavor: product.flavor,
           unit_type: product.unit_type,
           unit_value: product.unit_value,
-          unit_price: product.retail_price,
+          unit_price: Number(product.retail_price) || 0,
           image_url: product.image_url,
           quantity: Math.min(qty, product.stock),
           stock: product.stock,

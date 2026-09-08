@@ -799,6 +799,13 @@ function BulkProductModal({
                 + Aroma Ekle
               </button>
             </div>
+            {/* Sütun başlıkları */}
+            <div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-medium text-slate-400">
+              <span className="flex-1">Aroma Adı</span>
+              <span className="w-20 text-center">Stok (adet)</span>
+              <span className="w-36 text-center">Satış ₺ (0 = varsayılan)</span>
+              <span className="w-[38px]" />
+            </div>
             <div className="space-y-2">
               {rows.map((row, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -811,15 +818,16 @@ function BulkProductModal({
                   <input
                     type="number" min={0} value={row.stock}
                     onChange={(e) => setRow(i, { stock: Number(e.target.value) })}
-                    placeholder="Stok"
-                    title="Stok"
+                    title="Bu aromanın başlangıç stok adedi"
+                    aria-label="Stok adedi"
                     className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-brand-500"
                   />
                   <input
                     type="number" min={0} step="0.01" value={row.retail_price}
                     onChange={(e) => setRow(i, { retail_price: Number(e.target.value) })}
-                    placeholder="Satış ₺ (0 = varsayılan)"
-                    title="Satış fiyatı (boş/0 = varsayılan)"
+                    title="Bu aromanın satış fiyatı (₺). 0 bırakılırsa yukarıdaki varsayılan satış fiyatı kullanılır."
+                    aria-label="Satış fiyatı"
+                    placeholder="Satış ₺"
                     className="w-36 rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-brand-500"
                   />
                   <button

@@ -402,6 +402,7 @@ function ProductFormModal({
               </label>
               <input
                 type="number"
+                                onFocus={(e) => e.currentTarget.select()}
                 min={0}
                 step="0.01"
                 value={form.unit_value}
@@ -420,6 +421,7 @@ function ProductFormModal({
               <label className="text-sm font-medium text-slate-700">Stok</label>
               <input
                 type="number"
+                                onFocus={(e) => e.currentTarget.select()}
                 min={0}
                 value={form.stock}
                 onChange={(e) =>
@@ -434,6 +436,7 @@ function ProductFormModal({
               </label>
               <input
                 type="number"
+                                onFocus={(e) => e.currentTarget.select()}
                 min={0}
                 value={form.critical_threshold}
                 onChange={(e) =>
@@ -458,6 +461,7 @@ function ProductFormModal({
               </label>
               <input
                 type="number"
+                                onFocus={(e) => e.currentTarget.select()}
                 min={0}
                 step="0.01"
                 value={form.purchase_price}
@@ -473,6 +477,7 @@ function ProductFormModal({
               </label>
               <input
                 type="number"
+                                onFocus={(e) => e.currentTarget.select()}
                 min={0}
                 step="0.01"
                 value={form.retail_price}
@@ -755,6 +760,7 @@ function BulkProductModal({
               <label className="text-sm font-medium text-slate-700">Miktar</label>
               <input
                 type="number" min={0} step="0.01" value={unit_value}
+                                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => setUnitValue(Number(e.target.value))}
                 placeholder="örn. 250"
                 className={inputCls}
@@ -764,6 +770,7 @@ function BulkProductModal({
               <label className="text-sm font-medium text-slate-700">Alış Fiyatı (₺)</label>
               <input
                 type="number" min={0} step="0.01" value={purchase_price}
+                                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => setPurchasePrice(Number(e.target.value))}
                 className={inputCls}
               />
@@ -772,6 +779,7 @@ function BulkProductModal({
               <label className="text-sm font-medium text-slate-700">Satış Fiyatı (₺)</label>
               <input
                 type="number" min={0} step="0.01" value={defaultRetail}
+                                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setDefaultRetail(v);
@@ -795,6 +803,7 @@ function BulkProductModal({
             </label>
             <input
               type="number" min={0} value={critical_threshold}
+                              onFocus={(e) => e.currentTarget.select()}
               onChange={(e) => setCriticalThreshold(Number(e.target.value))}
               className={inputCls}
             />
@@ -834,6 +843,7 @@ function BulkProductModal({
                   />
                   <input
                     type="number" min={0} value={row.stock}
+                                    onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => setRow(i, { stock: Number(e.target.value) })}
                     title="Bu aromanın başlangıç stok adedi"
                     aria-label="Stok adedi"
@@ -841,6 +851,7 @@ function BulkProductModal({
                   />
                   <input
                     type="number" min={0} step="0.01" value={row.retail_price}
+                                    onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => setRow(i, { retail_price: Number(e.target.value) })}
                     title="Bu aromanın satış fiyatı (₺). 0 bırakılırsa yukarıdaki varsayılan satış fiyatı kullanılır."
                     aria-label="Satış fiyatı"

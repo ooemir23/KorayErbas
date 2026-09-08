@@ -82,9 +82,9 @@ export function ProductCard({ product, onAdd, onRequest }: ProductCardProps) {
             📢 Talepte Bulun
           </button>
         ) : (
-          <div className="mt-1.5 flex items-center gap-1.5">
+          <div className="mt-1.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1.5">
             {/* Adet kontrolü: - / input / + */}
-            <div className="flex items-center rounded-md border border-slate-200">
+            <div className="flex items-center justify-center rounded-md border border-slate-200 sm:justify-start">
               <button
                 type="button"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -129,7 +129,7 @@ export function ProductCard({ product, onAdd, onRequest }: ProductCardProps) {
                 onAdd(product, qty);
                 setQty(1); // ekle sonrası sıfırla
               }}
-              className="flex-1 rounded-md bg-brand-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
+              className="w-full rounded-md bg-brand-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 sm:w-auto sm:flex-1"
             >
               Sepete Ekle
             </button>

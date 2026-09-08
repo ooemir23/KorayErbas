@@ -154,7 +154,7 @@ export default function StorefrontPage() {
 
         {/* İçerik */}
         {loading ? (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}
@@ -206,7 +206,7 @@ export default function StorefrontPage() {
                   {/* Ürünler — açıksa göster */}
                   {isOpen && (
                     <div className="border-t border-slate-100 p-2">
-                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                         {items.map((p) => (
                           <ProductCard
                             key={p.id}

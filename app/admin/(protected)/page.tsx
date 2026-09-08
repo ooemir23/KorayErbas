@@ -247,8 +247,20 @@ function OrderDetailModal({
   );
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Manuel toplam (boş → otomatik hesap). Siparişin mevcut tutarı ile başlar.
+  const [manualTotal, setManualTotal] = useState<string>(
+    String(Number(order.total_amount ?? 0))
+  );
 
-  const total = items.reduce((s, it) => s + it.unit_price * it.quantity, 0);
+  const autoTotal = items.reduce(
+    (s, it) => s + it.unit_price * it.quantity,
+    0
+  );
+  const parsedManual = manualTotal.trim() === "" ? null : Number(manualTotal.replace(",", "."));
+  const total =
+    parsedManual != null && !Number.isNaN(parsedManual)
+      ? parsedManual
+      : autoTotal;
 
   function setQty(i: number, q: number) {
     setItems((prev) =>
@@ -363,13 +375,34 @@ function OrderDetailModal({
             </div>
           </div>
 
-          {/* Toplam */}
-          <div className="flex items-center justify-between rounded-xl bg-brand-50 px-4 py-3">
+          {/* Toplam — manuel düzenlenebilir */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-brand-50 px-4 py-3">
             <span className="font-medium text-brand-700">Toplam Tutar</span>
-            <span className="text-lg font-bold text-brand-700">
-              {formatTRY(total)}
-            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={manualTotal}
+                onChange={(e) => setManualTotal(e.target.value)}
+                className="w-32 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-right text-lg font-bold text-brand-700"
+                title="Toplam tutarı elle düzenleyebilirsiniz"
+              />
+              <span className="text-lg font-bold text-brand-700">₺</span>
+              <button
+                type="button"
+                onClick={() => setManualTotal(String(autoTotal))}
+                className="rounded-md border border-brand-200 bg-white px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100"
+                title="Ürünlerden otomatik yeniden hesapla"
+              >
+                ↻ Hesapla
+              </button>
+            </div>
           </div>
+          <p className="-mt-3 text-xs text-slate-400">
+            Toplam tutarı elle düzenleyebilirsiniz (örn. indirim). "↻ Hesapla"
+            ürünlerden otomatik hesaplar ({formatTRY(autoTotal)}).
+          </p>
 
           {/* Aksiyon butonları */}
           <div className="flex flex-wrap gap-2">

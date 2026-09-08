@@ -545,6 +545,32 @@ function BulkProductModal({
       .catch(() => {});
   }, []);
 
+  // Marka seçilince: marka zaten kayıtlıysa mevcut görselini yükle.
+  useEffect(() => {
+    const q = brand.trim().toLowerCase();
+    if (!q) return;
+    const exists = brands.some((b) => b.toLowerCase() === q);
+    if (!exists) return;
+    let cancelled = false;
+    fetch("/api/products?all=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const products: Product[] = d.products || [];
+        const withImage = products.find(
+          (p) =>
+            p.brand?.trim().toLowerCase() === q && p.image_url
+        );
+        if (withImage?.image_url) setImageUrl(withImage.image_url);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // Sadece marka değişince çalışsın (brands yüklendikten sonra da tekrar denenir).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand, brands.length]);
+
   const brandSuggestions = useMemo(() => {
     const q = brandQuery.trim().toLowerCase();
     if (!q) return brands;
